@@ -8,7 +8,7 @@
 #define ETHERNET_MAC { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 
 // Uncomment these lines if you use a WiFi Shield
-//#define USE_WIFI_SHIELD
+#define USE_WIFI_SHIELD
 #define WIFI_SSID "ssid"
 #define WIFI_KEY "wpakey"
 
@@ -43,11 +43,11 @@
 
 // Enable as needed, depending on either USE_ETHERNET_SHIELD, USE_WIFI_SHIELD and USE_NEOPIXEL
 //#include <Adafruit_NeoPixel.h>
-//#include <SPI.h>
+#include <SPI.h>
 //#include <Ethernet.h>
 //#include <EthernetUdp.h>
-//#include <WiFi.h>
-//#include <WiFiUdp.h>
+#include <WiFi.h>
+#include <WiFiUdp.h>
 
 // Our prototypes!
 void setup();
@@ -57,6 +57,7 @@ void wifiConnect();
 void ethernetConnect();
 
 void serverCheck();
+
 void triggerCheck();
 void gotTriggered();
 
@@ -70,6 +71,7 @@ void pointerChanged();
 
 #ifdef USE_ETHERNET_SHIELD
   #define USE_NETWORK
+  EthernetClient client;
   EthernetServer server = EthernetServer(SERVER_PORT);
   EthernetUDP udp;
   byte ethernetMac[] = ETHERNET_MAC;
@@ -77,6 +79,7 @@ void pointerChanged();
 
 #ifdef USE_WIFI_SHIELD
   #define USE_NETWORK
+  WiFiClient client;
   WiFiServer server = WiFiServer(SERVER_PORT);
   WiFiUDP udp;
   int connectionStatus = WL_IDLE_STATUS;
@@ -159,8 +162,8 @@ void ethernetConnect()
   Ethernet.begin(ethernetMac);
 
   // print our Ethernet shield's IP address
-  IPAddress ip = WiFi.localIP();
-  Serial.println(Ethernet.localIP());
+  IPAddress ip = Ethernet.localIP();
+  Serial.println(ip);
 }
 #endif USE_ETHERNET_SHIELD
 
@@ -236,7 +239,7 @@ void xs1Push()
 void strombewusstPush()
 {
   // Make sure we have either the Ethernet or WiFi shield enabled
-  #ifdef USE_NETWORK  
+  #ifdef USE_STROMBEWUSST_SERVER  
     // Set the last byte the the current frame's value
     udpBuffer[33] = storage[storagePointer];
     udp.beginPacket(STROMBEWUSST_SERVER, STROMBEWUSST_PORT);
