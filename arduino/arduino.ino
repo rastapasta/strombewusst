@@ -56,8 +56,8 @@ void wifiConnect();
 void ethernetConnect();
 void serverCheck();
 String serverHeader(String);
-String requestHeader(String url);
-bool networkRequest(IPAddress server, String url);
+String requestHeader(String);
+bool networkRequestIP(IPAddress, String);
 
 void triggerCheck();
 void gotTriggered();
@@ -71,7 +71,9 @@ String generateJSON();
 
 void pointerLoop();
 void pointerChanged();
+// -- end of prototypes
 
+// Set up the corresponding network device
 #ifdef USE_ETHERNET_SHIELD
   #define USE_NETWORK
   EthernetClient client;
@@ -102,7 +104,7 @@ const int timeStorage = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
 byte storage[timeStorage];
 
 bool useNetwork = false;
-int storagePointer = 0;
+int storagePointer = -1;
 
 void setup() {
   Serial.begin(9600);
@@ -265,9 +267,13 @@ void pointerLoop()
   if (pointer != storagePointer)
   {
     #ifdef USE_NETWORK
-      push();
+      // Only push if this is not the first iteration
+      if (storagePointer != -1)
+      {
+        push();
+      }
     #endif
-
+    
     storagePointer = pointer;
     pointerChanged();
   }
@@ -297,22 +303,23 @@ void push()
 #ifdef USE_XS1_SERVER
 void xs1Push()
 {
-  IPAddress server XS1_IP;
-  String url = XS1_URL+String(storage[storagePointer]);
-  if (networkRequest(server, url) == true)
+  IPAddress ip XS1_IP;
+  String url = XS1_URL+String(storageSum(60/TIMEFRAME*5)/5*1.25*60);
+  Serial.println("[XS1] Update URL: "+url);
+  if (networkRequestIP(ip, url) == true)
   {
-    Serial.println("XS1 updated");
+    Serial.println("[XS1] updated");
   } else
   {
-    Serial.println("XS1 update failed");
+    Serial.println("[XS1] update failed");
   }
-}  
+}
 #endif
 
 #ifdef USE_NETWORK
-bool networkRequest(IPAddress server, String url)
+bool networkRequestIP(IPAddress ip, String url)
 {
-  if (client.connect(server, 80))
+  if (client.connect(ip, 80))
   {
     requestHeader(url).toCharArray(requestBuffer, 128);
     client.write(requestBuffer);
@@ -321,12 +328,11 @@ bool networkRequest(IPAddress server, String url)
   {
     return false;
   }
-  
 }
 
 String requestHeader(String url)
 {
- return "GET "+url+"HTTP/1.1\r\nConnection: close\r\n\r\n";
+  return "GET "+url+"HTTP/1.1\r\nConnection: close\r\n\r\n";
 }
 #endif
 
