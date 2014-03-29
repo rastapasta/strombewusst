@@ -4,24 +4,23 @@
 // Configuration
 
 // Uncomment these liness if you use an Ethernet Shield
-//#define USE_ETHERNET_SHIELD
-//#define ETHERNET_USE_DHCP
-//#define ETHERNET_MAC { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+#define USE_ETHERNET_SHIELD
+#define ETHERNET_MAC { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 
 // Uncomment these lines if you use a WiFi Shield
 //#define USE_WIFI_SHIELD
-//#define WIFI_SSID "ssid"
-//#define WIFI_KEY "wpakey"
+#define WIFI_SSID "ssid"
+#define WIFI_KEY "wpakey"
 
 // Uncomment these lines if you use NeoPixel for status visualization
 //#define USE_NEOPIXEL
-//#define NEOPIXEL_PIN 6
+#define NEOPIXEL_PIN 6
 
 // Uncomment these lines if you wish to use the the free strombewusstsein Web Service!
-//#define USE_STROMBEWUSST_SERVER
-//#define STROMBEWUSST_SERVER "se.esse.es"
-//#define STROMBEWUSST_PORT 8888
-//#define STROMBEWUSST_KEY "foobar"
+#define USE_STROMBEWUSST_SERVER
+#define STROMBEWUSST_SERVER "se.esse.es"
+#define STROMBEWUSST_PORT 8888
+#define STROMBEWUSST_KEY "foobar"
 
 // TriggerPin - the PIN that gets HIGH when 1.25W/h were used on the line
 #define TRIGGER_PIN 8
@@ -68,12 +67,14 @@ void pointerChanged();
   int connectionStatus = WL_IDLE_STATUS;
 #endif
 #ifdef USE_STROMBEWUSST_SERVER
-  char udpBuffer[33] = STROMBEWUSST_KEY;
+  // UDP Format: <32xkey><1xtimeframe><1xticks>
+  char udpBuffer[34] = STROMBEWUSST_KEY;
 #endif
 // TimeStorage - stores the # of bytes needed to store the information
 const int timeStorage = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
 byte storage[timeStorage];
 
+bool useNetwork = false;
 int storagePointer = 0;
 
 void setup() {
@@ -81,9 +82,11 @@ void setup() {
   pinMode(TRIGGER_PIN, INPUT);
   
   #ifdef USE_WIFI_SHIELD
+    useNetwork = true;
     wifiConnect();
   #endif
   #ifdef USE_ETHERNET_SHIELD
+    useNetwork = true;
     ethernetConnect();
   #endif
   #ifdef USE_STROMBEWUSST_SERVER
@@ -93,9 +96,14 @@ void setup() {
 
 void strombewusstInit()
 {
-  #ifdef USE_ETHERNET_SHIELD
-  
-  #endif
+  // Make sure we have either the Ethernet or WiFi shield enabled
+  if (useNetwork == false)
+  {
+    return;
+  }
+
+  udpBuffer[32] = TIMEFRAME;
+  udp.begin(STROMBEWUSST_PORT);
 }
 
 void loop()
@@ -176,21 +184,26 @@ void pointerLoop()
 
 void strombewusstPush()
 {
-  #ifdef USE_ETHERNET_SHIELD
+  // Make sure we have either the Ethernet or WiFi shield enabled
+  if (useNetwork == false)
+  {
+    return;
+  }
   
-  #endif
-  #ifdef USE_WIFI_SHIELD
-  
-  #endif
+  // Set the last byte the the current frame's value
+  udpBuffer[33] = storage[storagePointer];
+  udp.beginPacket(STROMBEWUSST_SERVER, STROMBEWUSST_PORT);
+  udp.write(udpBuffer);
+  udp.endPacket();
 }
 
 void pointerChanged()
 {
+  storage[storagePointer] = 0;
   Serial.println("Last 5 seconds: "+String(storageSum(1)));
   Serial.println("Last 30 seconds: "+String(storageSum(6)));
   Serial.println("Last minute: "+String(storageSum(12)));
   Serial.println("Pointer changed to "+String(storagePointer));
-  storage[storagePointer] = 0;
 }
 
 
