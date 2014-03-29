@@ -61,15 +61,18 @@ void pointerChanged();
   EthernetUDP udp;
   byte ethernetMac[] = ETHERNET_MAC;
 #endif
+
 #ifdef USE_WIFI_SHIELD
   WiFiServer server = WiFiServer(SERVER_PORT);
   WiFiUDP udp;
   int connectionStatus = WL_IDLE_STATUS;
 #endif
+
 #ifdef USE_STROMBEWUSST_SERVER
   // UDP Format: <32xkey><1xtimeframe><1xticks>
   char udpBuffer[34] = STROMBEWUSST_KEY;
 #endif
+
 // TimeStorage - stores the # of bytes needed to store the information
 const int timeStorage = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
 byte storage[timeStorage];
@@ -79,6 +82,7 @@ int storagePointer = 0;
 
 void setup() {
   Serial.begin(9600);
+  
   pinMode(TRIGGER_PIN, INPUT);
   
   #ifdef USE_WIFI_SHIELD
@@ -108,7 +112,10 @@ void strombewusstInit()
 
 void loop()
 {
+  // Check if time moved on to a new frame
   pointerLoop();
+  
+  // Check if we got a signal right now
   triggerCheck();
 }
 
@@ -213,12 +220,11 @@ int storageSum(int frames)
   int pos = storagePointer;
   for (int i=0; i<frames; i++)
   {
-    pos--;
-    if (pos == -1)
+    if (--pos == -1)
     {
       pos = timeStorage-1;
     }
-    sum = sum + (int)storage[pos];
+    sum += (int)storage[pos];
   }
   return sum;
 }
