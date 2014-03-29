@@ -18,7 +18,7 @@
 //#define USE_NEOPIXEL
 #define NEOPIXEL_PIN 6
 
-//#define USE_XS1_SERVER
+#define USE_XS1_SERVER
 #define XS1_IP (10, 11, 10, 18)
 #define XS1_URL "/control?callback=cname&cmd=set_state_sensor&number=9&value="
 
@@ -54,13 +54,15 @@ void loop();
 void networkConnect();
 void wifiConnect();
 void ethernetConnect();
-
 void serverCheck();
 String serverHeader(String);
+String requestHeader(String url);
+bool networkRequest(IPAddress server, String url);
 
 void triggerCheck();
 void gotTriggered();
 
+void push();
 void xs1Push();
 void strombewusstPush();
 
@@ -84,6 +86,10 @@ void pointerChanged();
   WiFiServer server = WiFiServer(SERVER_PORT);
   WiFiUDP udp;
   int connectionStatus = WL_IDLE_STATUS;
+#endif
+
+#ifdef USE_NETWORK
+  char requestBuffer[128];
 #endif
 
 #ifdef USE_STROMBEWUSST_SERVER
@@ -258,34 +264,13 @@ void pointerLoop()
   int pointer = millis() / 1000 / TIMEFRAME % STORAGE_HOURS;
   if (pointer != storagePointer)
   {
-    #ifdef USE_STROMBEWUSST_SERVER
-      strombewusstPush();
+    #ifdef USE_NETWORK
+      push();
     #endif
-    #ifdef USE_XS1_SERVER
-      xs1Push();
-    #endif
+
     storagePointer = pointer;
     pointerChanged();
   }
-}
-
-#ifdef USE_XS1_SERVER
-void xs1Push()
-{
-
-}  
-#endif
-  
-void strombewusstPush()
-{
-  // Make sure we have either the Ethernet or WiFi shield enabled
-  #ifdef USE_STROMBEWUSST_SERVER  
-    // Set the last byte the the current frame's value
-    udpBuffer[33] = storage[storagePointer];
-    udp.beginPacket(STROMBEWUSST_SERVER, STROMBEWUSST_PORT);
-    udp.write(udpBuffer);
-    udp.endPacket();
-  #endif
 }
 
 void pointerChanged()
@@ -296,6 +281,65 @@ void pointerChanged()
   Serial.println("Last minute: "+String(storageSum(4)));
   Serial.println("Pointer changed to "+String(storagePointer));
 }
+
+
+
+void push()
+{
+   #ifdef USE_STROMBEWUSST_SERVER
+    strombewusstPush();
+  #endif
+  #ifdef USE_XS1_SERVER
+    xs1Push();
+  #endif
+}
+
+#ifdef USE_XS1_SERVER
+void xs1Push()
+{
+  IPAddress server XS1_IP;
+  String url = XS1_URL+String(storage[storagePointer]);
+  if (networkRequest(server, url) == true)
+  {
+    Serial.println("XS1 updated");
+  } else
+  {
+    Serial.println("XS1 update failed");
+  }
+}  
+#endif
+
+#ifdef USE_NETWORK
+bool networkRequest(IPAddress server, String url)
+{
+  if (client.connect(server, 80))
+  {
+    requestHeader(url).toCharArray(requestBuffer, 128);
+    client.write(requestBuffer);
+    return true;
+  } else
+  {
+    return false;
+  }
+  
+}
+
+String requestHeader(String url)
+{
+ return "GET "+url+"HTTP/1.1\r\nConnection: close\r\n\r\n";
+}
+#endif
+
+#ifdef USE_STROMBEWUSST_SERVER 
+void strombewusstPush()
+{
+  // Set the last byte the the current frame's value
+  udpBuffer[33] = storage[storagePointer];
+  udp.beginPacket(STROMBEWUSST_SERVER, STROMBEWUSST_PORT);
+  udp.write(udpBuffer);
+  udp.endPacket();
+}
+#endif 
 
 #ifdef USE_NETWORK
 String generateJSON()
