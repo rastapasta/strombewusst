@@ -18,7 +18,7 @@
 //#define USE_NEOPIXEL
 #define NEOPIXEL_PIN 9
 
-//#define USE_XS1_SERVER
+#define USE_XS1_SERVER
 #define XS1_IP (10, 11, 10, 18)
 #define XS1_URL "/control?callback=cname&cmd=set_state_sensor&number=9&value="
 #define XS1_TIMEFRAME 3
@@ -36,7 +36,7 @@
 #define TIMEFRAME 15
 
 // STORAGE_HOURS defines how many hours of detailed information are stored in RAM
-#define STORAGE_HOURS 2
+#define STORAGE_HOURS 1
 
 #define SERVER_PORT 80
 // *************************************
@@ -57,7 +57,6 @@ void wifiConnect();
 void ethernetConnect();
 void serverCheck();
 String serverHeader(String);
-String requestHeader(String);
 bool networkRequestIP(IPAddress, String);
 
 void triggerCheck();
@@ -92,7 +91,7 @@ void pointerChanged();
 #endif
 
 #ifdef USE_NETWORK
-  char requestBuffer[128];
+  char requestBuffer[96];
 #endif
 
 #ifdef USE_STROMBEWUSST_SERVER
@@ -101,7 +100,7 @@ void pointerChanged();
 #endif
 
 // TimeStorage - stores the # of bytes needed to store the information
-const int timeStorage = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
+const unsigned int timeStorage = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
 byte storage[timeStorage];
 
 bool useNetwork = false;
@@ -268,18 +267,11 @@ void gotTriggered()
 
 void pointerLoop()
 {
+  // Tick forward each x-Timeframe seconds
   int pointer = millis() / 1000 / TIMEFRAME % timeStorage;
   if (pointer != storagePointer)
   {
     storage[storagePointer] = 1;
-    #ifdef USE_NETWORK
-      // Only push if this is not the first iteration
-      if (storagePointer != -1)
-      {
-        push();
-      }
-    #endif
-    
     storagePointer = pointer;
     pointerChanged();
   }
@@ -288,6 +280,10 @@ void pointerLoop()
 void pointerChanged()
 {
   storage[storagePointer] = 0;
+
+  #ifdef USE_NETWORK
+    push();
+  #endif
 
   Serial.println("*** Time frame changed ***");
   Serial.println("Last 15 seconds: "+String(storageSum(1)));
@@ -313,7 +309,7 @@ void xs1Push()
   String url = XS1_URL;
   url += (int)(storageSum(60*XS1_TIMEFRAME/TIMEFRAME)*1.25*60/XS1_TIMEFRAME);
   Serial.println("[XS1] Update URL: "+url);  
-  return;
+
   if (networkRequestIP(ip, url) == true)
   {
     Serial.println("[XS1] updated");
@@ -329,26 +325,26 @@ bool networkRequestIP(IPAddress ip, String url)
 {
   if (client.connect(ip, 80))
   {
-    requestHeader(url).toCharArray(requestBuffer, 128);
+    String request = "GET "+url;
+    request += " HTTP/1.1\r\nConnection: close\r\n\r\n";
+    request.toCharArray(requestBuffer, 96);
+    
+    Serial.println("[network] sending request:");
     client.write(requestBuffer);
+    client.stop();
     return true;
   } else
   {
     return false;
   }
 }
-
-String requestHeader(String url)
-{
-  return "GET "+url+" HTTP/1.1\r\nConnection: close\r\n\r\n";
-}
 #endif
 
 #ifdef USE_STROMBEWUSST_SERVER 
 void strombewusstPush()
 {
-  // Set the last byte the the current frame's value
-  udpBuffer[33] = storage[storagePointer];
+  // Set the last byte the the last frame's value
+  udpBuffer[33] = storageSum(1);
   udp.beginPacket(STROMBEWUSST_SERVER, STROMBEWUSST_PORT);
   udp.write(udpBuffer);
   udp.endPacket();
