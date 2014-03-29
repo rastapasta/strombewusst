@@ -26,19 +26,18 @@
 //#define USE_STROMBEWUSST_SERVER
 #define STROMBEWUSST_SERVER "se.esse.es"
 #define STROMBEWUSST_PORT 8888
-#define STROMBEWUSST_KEY "foobar"
+#define STROMBEWUSST_KEY "1234567890123456789012"
 
 // TriggerPin - the PIN that gets HIGH when 1.25W/h were used on the line
 #define TRIGGER_PIN 8
 
 // TIMEFRAME defines the datastorages time segmenting (256 hits in that time frame max)
-#define TIMEFRAME 60
+#define TIMEFRAME 15
 
 // STORAGE_HOURS defines how many hours of detailed information are stored in RAM
-#define STORAGE_HOURS 12
+#define STORAGE_HOURS 3
 
 #define SERVER_PORT 80
-
 // *************************************
 
 // Enable as needed, depending on either USE_ETHERNET_SHIELD, USE_WIFI_SHIELD and USE_NEOPIXEL
@@ -57,6 +56,7 @@ void wifiConnect();
 void ethernetConnect();
 
 void serverCheck();
+String serverHeader(String);
 
 void triggerCheck();
 void gotTriggered();
@@ -64,7 +64,8 @@ void gotTriggered();
 void xs1Push();
 void strombewusstPush();
 
-int storageSum(int frames);
+int storageSum(int);
+String generateJSON();
 
 void pointerLoop();
 void pointerChanged();
@@ -115,8 +116,12 @@ void networkConnect()
   #ifdef USE_ETHERNET_SHIELD
     ethernetConnect();
   #endif
+  #ifdef USE_NETWORK
+    server.begin();
+  #endif
 
   #ifdef USE_STROMBEWUSST_SERVER
+    // UDP Format: <32xkey><1xtimeframe><1xticks>
     udpBuffer[32] = TIMEFRAME;
     udp.begin(STROMBEWUSST_PORT);
   #endif 
@@ -146,14 +151,50 @@ void serverCheck()
   #endif
   #ifdef USE_NETWORK
     // Check for a new connection
+    char headerBuffer[10];
     if (client)
     {
-      Serial.println("Got a connection!");
-      client.stop();
-    }
+      Serial.println("new client");
+      while (client.connected()) {
+        if (client.available()) {          
+          // Get the first couple of bytes
+          for (int i=0; i<10; i++)
+          {
+            headerBuffer[i] = client.read();
+          }
+          client.flush();
+          
+          String header = headerBuffer;
+          if (header.startsWith("GET / "))
+          {
+            client.print(serverHeader("text/html"));
+            client.println("Hello from StromBewusst!");
+          }
+          
+          if(header.startsWith("GET /json "))
+          {
+            client.print(serverHeader("text/json"));
+            client.print(generateJSON());
+          }
+
+          delay(1);
+          client.stop();
+        }
+      }
+      Serial.println("client disconnected");
+    }      
   #endif
 }
 
+#ifdef USE_NETWORK
+String serverHeader(String contentType)
+{
+  return
+    String("HTTP/1.1 200 OK\r\n")+
+    "Content-Type: "+contentType+"\r\n"+
+    "Connection: close\r\n\r\n";
+}
+#endif
 
 // All the Ethernet related methods only needed when the shield is used
 #ifdef USE_ETHERNET_SHIELD
@@ -228,13 +269,12 @@ void pointerLoop()
   }
 }
 
+#ifdef USE_XS1_SERVER
 void xs1Push()
 {
-  // Make sure we have either the Ethernet or WiFi shield enabled
-  #ifdef USE_NETWORK  
 
-  #endif
 }  
+#endif
   
 void strombewusstPush()
 {
@@ -251,12 +291,21 @@ void strombewusstPush()
 void pointerChanged()
 {
   storage[storagePointer] = 0;
-  Serial.println("Last 5 seconds: "+String(storageSum(1)));
-  Serial.println("Last 30 seconds: "+String(storageSum(6)));
-  Serial.println("Last minute: "+String(storageSum(12)));
+  Serial.println("Last 15 seconds: "+String(storageSum(1)));
+  Serial.println("Last 30 seconds: "+String(storageSum(2)));
+  Serial.println("Last minute: "+String(storageSum(4)));
   Serial.println("Pointer changed to "+String(storagePointer));
 }
 
+#ifdef USE_NETWORK
+String generateJSON()
+{
+  return "{\"history\":{\"15\":"+String(storageSum(1))
+          +",\"30\":"+String(storageSum(2))
+          +",\"60\":"+String(storageSum(4))
+          +"}}";
+}
+#endif
 
 int storageSum(int frames)
 {
