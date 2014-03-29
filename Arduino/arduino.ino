@@ -4,23 +4,23 @@
 // Configuration
 
 // Uncomment these liness if you use an Ethernet Shield
-#define USE_ETHERNET_SHIELD
-#define ETHERNET_MAC { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+//#define USE_ETHERNET_SHIELD
+//#define ETHERNET_MAC { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 
 // Uncomment these lines if you use a WiFi Shield
 //#define USE_WIFI_SHIELD
-#define WIFI_SSID "ssid"
-#define WIFI_KEY "wpakey"
+//#define WIFI_SSID "ssid"
+//#define WIFI_KEY "wpakey"
 
 // Uncomment these lines if you use NeoPixel for status visualization
 //#define USE_NEOPIXEL
-#define NEOPIXEL_PIN 6
+//#define NEOPIXEL_PIN 6
 
 // Uncomment these lines if you wish to use the the free strombewusstsein Web Service!
-#define USE_STROMBEWUSST_SERVER
-#define STROMBEWUSST_SERVER "se.esse.es"
-#define STROMBEWUSST_PORT 8888
-#define STROMBEWUSST_KEY "foobar"
+//#define USE_STROMBEWUSST_SERVER
+//#define STROMBEWUSST_SERVER "se.esse.es"
+//#define STROMBEWUSST_PORT 8888
+//#define STROMBEWUSST_KEY "foobar"
 
 // TriggerPin - the PIN that gets HIGH when 1.25W/h were used on the line
 #define TRIGGER_PIN 8
@@ -35,34 +35,41 @@
 
 // *************************************
 
-// Due to weird ifdef handling of the Arudino IDE, all libraries must be included on spot :(
+// Enable as needed, depending on either USE_ETHERNET_SHIELD, USE_WIFI_SHIELD and USE_NEOPIXEL
 //#include <Adafruit_NeoPixel.h>
-#include <SPI.h>
-#include <Ethernet.h>
-#include <EthernetUdp.h>
-#include <WiFi.h>
-#include <WiFiUdp.h>
+//#include <SPI.h>
+//#include <Ethernet.h>
+//#include <EthernetUdp.h>
+//#include <WiFi.h>
+//#include <WiFiUdp.h>
 
 // Our prototypes!
 void setup();
 void loop();
+void networkConnect();
 void wifiConnect();
 void ethernetConnect();
+
+void serverCheck();
 void triggerCheck();
 void gotTriggered();
-void strombewusstInit();
+
 void strombewusstPush();
+
 int storageSum(int frames);
+
 void pointerLoop();
 void pointerChanged();
 
 #ifdef USE_ETHERNET_SHIELD
+  #define USE_NETWORK
   EthernetServer server = EthernetServer(SERVER_PORT);
   EthernetUDP udp;
   byte ethernetMac[] = ETHERNET_MAC;
 #endif
 
 #ifdef USE_WIFI_SHIELD
+  #define USE_NETWORK
   WiFiServer server = WiFiServer(SERVER_PORT);
   WiFiUDP udp;
   int connectionStatus = WL_IDLE_STATUS;
@@ -85,29 +92,24 @@ void setup() {
   
   pinMode(TRIGGER_PIN, INPUT);
   
-  #ifdef USE_WIFI_SHIELD
-    useNetwork = true;
-    wifiConnect();
-  #endif
-  #ifdef USE_ETHERNET_SHIELD
-    useNetwork = true;
-    ethernetConnect();
-  #endif
-  #ifdef USE_STROMBEWUSST_SERVER
-    strombewusstInit();
+  #ifdef USE_NETWORK
+    networkConnect();
   #endif
 }
 
-void strombewusstInit()
+void networkConnect()
 {
-  // Make sure we have either the Ethernet or WiFi shield enabled
-  if (useNetwork == false)
-  {
-    return;
-  }
+   #ifdef USE_WIFI_SHIELD
+    wifiConnect();
+  #endif
+  #ifdef USE_ETHERNET_SHIELD
+    ethernetConnect();
+  #endif
 
-  udpBuffer[32] = TIMEFRAME;
-  udp.begin(STROMBEWUSST_PORT);
+  #ifdef USE_STROMBEWUSST_SERVER
+    udpBuffer[32] = TIMEFRAME;
+    udp.begin(STROMBEWUSST_PORT);
+  #endif 
 }
 
 void loop()
@@ -117,7 +119,31 @@ void loop()
   
   // Check if we got a signal right now
   triggerCheck();
+ 
+  #ifdef USE_NETWORK 
+    // Check if we got an incoming connection to our server
+    serverCheck();
+  #endif
 }
+
+void serverCheck()
+{
+  #ifdef USE_ETHERNET_SHIELD
+    EthernetClient client = server.available();
+  #endif
+  #ifdef USE_WIFI_SHIELD
+    WiFiClient client = server.available();
+  #endif
+  #ifdef USE_NETWORK
+    // Check for a new connection
+    if (client)
+    {
+      Serial.println("Got a connection!");
+      client.stop();
+    }
+  #endif
+}
+
 
 // All the Ethernet related methods only needed when the shield is used
 #ifdef USE_ETHERNET_SHIELD
@@ -192,16 +218,13 @@ void pointerLoop()
 void strombewusstPush()
 {
   // Make sure we have either the Ethernet or WiFi shield enabled
-  if (useNetwork == false)
-  {
-    return;
-  }
-  
-  // Set the last byte the the current frame's value
-  udpBuffer[33] = storage[storagePointer];
-  udp.beginPacket(STROMBEWUSST_SERVER, STROMBEWUSST_PORT);
-  udp.write(udpBuffer);
-  udp.endPacket();
+  #ifdef USE_NETWORK  
+    // Set the last byte the the current frame's value
+    udpBuffer[33] = storage[storagePointer];
+    udp.beginPacket(STROMBEWUSST_SERVER, STROMBEWUSST_PORT);
+    udp.write(udpBuffer);
+    udp.endPacket();
+  #endif
 }
 
 void pointerChanged()
