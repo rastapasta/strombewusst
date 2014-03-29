@@ -5,22 +5,28 @@
 
 // Uncomment these liness if you use an Ethernet Shield
 //#define USE_ETHERNET_SHIELD
-//#define ETHERNET_MAC { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+#define ETHERNET_MAC { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
 
 // Uncomment these lines if you use a WiFi Shield
 //#define USE_WIFI_SHIELD
-//#define WIFI_SSID "ssid"
-//#define WIFI_KEY "wpakey"
+#define WIFI_SSID "ssid"
+#define WIFI_KEY "wpakey"
+
+// TODO: Fix IP/net config for both possible shields
 
 // Uncomment these lines if you use NeoPixel for status visualization
 //#define USE_NEOPIXEL
-//#define NEOPIXEL_PIN 6
+#define NEOPIXEL_PIN 6
+
+//#define USE_XS1_SERVER
+#define XS1_IP (10, 11, 10, 18)
+#define XS1_URL "/control?callback=cname&cmd=set_state_sensor&number=9&value="
 
 // Uncomment these lines if you wish to use the the free strombewusstsein Web Service!
 //#define USE_STROMBEWUSST_SERVER
-//#define STROMBEWUSST_SERVER "se.esse.es"
-//#define STROMBEWUSST_PORT 8888
-//#define STROMBEWUSST_KEY "foobar"
+#define STROMBEWUSST_SERVER "se.esse.es"
+#define STROMBEWUSST_PORT 8888
+#define STROMBEWUSST_KEY "foobar"
 
 // TriggerPin - the PIN that gets HIGH when 1.25W/h were used on the line
 #define TRIGGER_PIN 8
@@ -54,6 +60,7 @@ void serverCheck();
 void triggerCheck();
 void gotTriggered();
 
+void xs1Push();
 void strombewusstPush();
 
 int storageSum(int frames);
@@ -210,11 +217,22 @@ void pointerLoop()
     #ifdef USE_STROMBEWUSST_SERVER
       strombewusstPush();
     #endif
+    #ifdef USE_XS1_SERVER
+      xs1Push();
+    #endif
     storagePointer = pointer;
     pointerChanged();
   }
 }
 
+void xs1Push()
+{
+  // Make sure we have either the Ethernet or WiFi shield enabled
+  #ifdef USE_NETWORK  
+
+  #endif
+}  
+  
 void strombewusstPush()
 {
   // Make sure we have either the Ethernet or WiFi shield enabled
