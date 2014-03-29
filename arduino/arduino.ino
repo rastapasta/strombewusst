@@ -3,24 +3,25 @@
 // *************************************
 // Configuration
 
-// Uncomment these liness if you use an Ethernet Shield
-//#define USE_ETHERNET_SHIELD
-#define ETHERNET_MAC { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+// Uncomment this line if you use an Ethernet Shield
+#define USE_ETHERNET_SHIELD
+#define ETHERNET_MAC { 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc }
 
-// Uncomment these lines if you use a WiFi Shield
-#define USE_WIFI_SHIELD
+// Uncomment this line if you use a WiFi Shield
+//#define USE_WIFI_SHIELD
 #define WIFI_SSID "ssid"
 #define WIFI_KEY "wpakey"
 
 // TODO: Fix IP/net config for both possible shields
 
-// Uncomment these lines if you use NeoPixel for status visualization
+// Uncomment this line if you would like to use a NeoPixel for status indication
 //#define USE_NEOPIXEL
-#define NEOPIXEL_PIN 6
+#define NEOPIXEL_PIN 9
 
-#define USE_XS1_SERVER
+//#define USE_XS1_SERVER
 #define XS1_IP (10, 11, 10, 18)
 #define XS1_URL "/control?callback=cname&cmd=set_state_sensor&number=9&value="
+#define XS1_TIMEFRAME 3
 
 // Uncomment these lines if you wish to use the the free strombewusstsein Web Service!
 //#define USE_STROMBEWUSST_SERVER
@@ -35,7 +36,7 @@
 #define TIMEFRAME 15
 
 // STORAGE_HOURS defines how many hours of detailed information are stored in RAM
-#define STORAGE_HOURS 3
+#define STORAGE_HOURS 2
 
 #define SERVER_PORT 80
 // *************************************
@@ -43,10 +44,10 @@
 // Enable as needed, depending on either USE_ETHERNET_SHIELD, USE_WIFI_SHIELD and USE_NEOPIXEL
 //#include <Adafruit_NeoPixel.h>
 #include <SPI.h>
-//#include <Ethernet.h>
-//#include <EthernetUdp.h>
-#include <WiFi.h>
-#include <WiFiUdp.h>
+#include <Ethernet.h>
+#include <EthernetUdp.h>
+//#include <WiFi.h>
+//#include <WiFiUdp.h>
 
 // Our prototypes!
 void setup();
@@ -108,6 +109,7 @@ int storagePointer = -1;
 
 void setup() {
   Serial.begin(9600);
+  Serial.println("*** StromBewusst - Arduino FW ***");
   
   pinMode(TRIGGER_PIN, INPUT);
   
@@ -208,11 +210,12 @@ String serverHeader(String contentType)
 #ifdef USE_ETHERNET_SHIELD
 void ethernetConnect()
 {
+  Serial.println("[network] connecting via Ethernet shield");
   Ethernet.begin(ethernetMac);
 
   // print our Ethernet shield's IP address
-  IPAddress ip = Ethernet.localIP();
-  Serial.println(ip);
+  Serial.print("[network] IP address received: ");
+  Serial.println(Ethernet.localIP());
 }
 #endif USE_ETHERNET_SHIELD
 
@@ -220,16 +223,19 @@ void ethernetConnect()
 #ifdef USE_WIFI_SHIELD
 void wifiConnect()
 {
+  Serial.println("[network] Connecting via WiFi shield"); 
+
   // check for the presence of the shield
   if (WiFi.status() == WL_NO_SHIELD) {
-    Serial.println("WiFi shield not present"); 
+    Serial.println("[network] WiFi shield not present"); 
     while(1);
-  } 
+  }
 
   // connect to our network  
   while ( connectionStatus != WL_CONNECTED) { 
-    Serial.print("Connecting to SSID: ");
+    Serial.print("[network] Joining network ");
     Serial.println(WIFI_SSID);
+
     connectionStatus = WiFi.begin(WIFI_SSID, WIFI_KEY);
 
     // wait 10 seconds for connection
@@ -237,9 +243,8 @@ void wifiConnect()
   }
 
   // print our WiFi shield's IP address
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
+  Serial.print("[network] IP address received: ");
+  Serial.println(WiFi.localIP());
 }
 #endif
 
@@ -263,9 +268,10 @@ void gotTriggered()
 
 void pointerLoop()
 {
-  int pointer = millis() / 1000 / TIMEFRAME % STORAGE_HOURS;
+  int pointer = millis() / 1000 / TIMEFRAME % timeStorage;
   if (pointer != storagePointer)
   {
+    storage[storagePointer] = 1;
     #ifdef USE_NETWORK
       // Only push if this is not the first iteration
       if (storagePointer != -1)
@@ -282,13 +288,13 @@ void pointerLoop()
 void pointerChanged()
 {
   storage[storagePointer] = 0;
+
+  Serial.println("*** Time frame changed ***");
   Serial.println("Last 15 seconds: "+String(storageSum(1)));
   Serial.println("Last 30 seconds: "+String(storageSum(2)));
   Serial.println("Last minute: "+String(storageSum(4)));
-  Serial.println("Pointer changed to "+String(storagePointer));
+  Serial.println();
 }
-
-
 
 void push()
 {
@@ -304,8 +310,10 @@ void push()
 void xs1Push()
 {
   IPAddress ip XS1_IP;
-  String url = XS1_URL+String(storageSum(60/TIMEFRAME*5)/5*1.25*60);
-  Serial.println("[XS1] Update URL: "+url);
+  String url = XS1_URL;
+  url += (int)(storageSum(60*XS1_TIMEFRAME/TIMEFRAME)*1.25*60/XS1_TIMEFRAME);
+  Serial.println("[XS1] Update URL: "+url);  
+  return;
   if (networkRequestIP(ip, url) == true)
   {
     Serial.println("[XS1] updated");
@@ -332,7 +340,7 @@ bool networkRequestIP(IPAddress ip, String url)
 
 String requestHeader(String url)
 {
-  return "GET "+url+"HTTP/1.1\r\nConnection: close\r\n\r\n";
+  return "GET "+url+" HTTP/1.1\r\nConnection: close\r\n\r\n";
 }
 #endif
 
@@ -363,7 +371,8 @@ int storageSum(int frames)
   int pos = storagePointer;
   for (int i=0; i<frames; i++)
   {
-    if (--pos == -1)
+    pos--;
+    if (pos == -1)
     {
       pos = timeStorage-1;
     }
