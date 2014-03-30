@@ -108,6 +108,12 @@ void pointerChanged();
 // TimeStorage - stores the # of bytes needed to store the information
 const unsigned int timeStorage = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
 byte storage[timeStorage];
+unsigned long storageRuntime = 0;
+unsigned int storageHour[24];
+unsigned int storageDay[31];
+
+byte lastDay = 0xFF;
+byte lastHour = 0xFF;
 
 bool useNetwork = false;
 int storagePointer = -1;
@@ -280,7 +286,26 @@ void triggerCheck()
 void gotTriggered()
 {
   Serial.println("Trigger got high!");
+  
   storage[storagePointer]++;
+
+  storageRuntime++;
+
+  byte day = millis() / 1000 / 60 / 24 % 31;
+  if (day != lastDay)
+  {
+    lastDay = day;
+    storageDay[day] = 1;
+  }
+  storageDay[day]++;
+  
+  byte hour = millis() / 1000 / 60 % 24;
+  if (hour != lastHour)
+  {
+    lastHour = hour;
+    storageHour[hour] = 0;
+  }
+  storageHour[hour]++;
 }
 
 
