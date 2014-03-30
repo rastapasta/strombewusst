@@ -33,7 +33,7 @@
 #define TRIGGER_PIN 8
 
 // TIMEFRAME defines the datastorages time segmenting (256 hits in that time frame max)
-#define TIMEFRAME 15
+#define TIMEFRAME 30
 
 // STORAGE_HOURS defines how many hours of detailed information are stored in RAM
 #define STORAGE_HOURS 1
@@ -55,7 +55,10 @@ void loop();
 void networkConnect();
 void wifiConnect();
 void ethernetConnect();
+
 void serverCheck();
+void networkCheck();
+
 String serverHeader(String);
 bool networkRequestIP(IPAddress, String);
 
@@ -77,6 +80,7 @@ void pointerChanged();
 #ifdef USE_ETHERNET_SHIELD
   #define USE_NETWORK
   EthernetClient client;
+  EthernetClient connection;
   EthernetServer server = EthernetServer(SERVER_PORT);
   EthernetUDP udp;
   byte ethernetMac[] = ETHERNET_MAC;
@@ -85,13 +89,15 @@ void pointerChanged();
 #ifdef USE_WIFI_SHIELD
   #define USE_NETWORK
   WiFiClient client;
+  WiFiClient connection;
   WiFiServer server = WiFiServer(SERVER_PORT);
   WiFiUDP udp;
   int connectionStatus = WL_IDLE_STATUS;
 #endif
 
 #ifdef USE_NETWORK
-  char requestBuffer[96];
+  char requestBuffer[128];
+  boolean lastConnected = false;
 #endif
 
 #ifdef USE_STROMBEWUSST_SERVER
@@ -147,53 +153,66 @@ void loop()
   #ifdef USE_NETWORK 
     // Check if we got an incoming connection to our server
     serverCheck();
+    networkCheck();
   #endif
 }
 
+void networkCheck()
+{
+  // dump all pending data from network connections to the serial interface
+  while (client.available())
+  {
+    char c = client.read();
+    Serial.print(c);
+  }
+
+  // stop the client if we lost the connection since the last loop
+  if (!client.connected() && lastConnected) {
+    Serial.println("[network] closing connection");
+    client.stop();
+  }
+  lastConnected = client.connected();
+}
+
+#ifdef USE_NETWORK
 void serverCheck()
 {
-  #ifdef USE_ETHERNET_SHIELD
-    EthernetClient client = server.available();
-  #endif
-  #ifdef USE_WIFI_SHIELD
-    WiFiClient client = server.available();
-  #endif
-  #ifdef USE_NETWORK
-    // Check for a new connection
-    char headerBuffer[10];
-    if (client)
-    {
-      Serial.println("new client");
-      while (client.connected()) {
-        if (client.available()) {          
-          // Get the first couple of bytes
-          for (int i=0; i<10; i++)
-          {
-            headerBuffer[i] = client.read();
-          }
-          client.flush();
-          
-          String header = headerBuffer;
-          if (header.startsWith("GET / "))
-          {
-            client.print(serverHeader("text/html"));
-            client.println("Hello from StromBewusst!");
-          }
-          
-          if(header.startsWith("GET /json "))
-          {
-            client.print(serverHeader("text/json"));
-            client.print(generateJSON());
-          }
-
-          delay(1);
-          client.stop();
+  connection = server.available();
+  // Check for a new connection
+  char headerBuffer[10];
+  if (connection)
+  {
+    Serial.println("new client");
+    while (connection.connected()) {
+      if (connection.available()) {          
+        // Get the first couple of bytes
+        for (int i=0; i<10; i++)
+        {
+          headerBuffer[i] = connection.read();
         }
+        connection.flush();
+        Serial.println(headerBuffer);
+        String header = headerBuffer;
+        if (header.startsWith("GET / "))
+        {
+          connection.print(serverHeader("text/html"));
+          connection.println("Hello from StromBewusst!");
+        }
+        
+        if(header.startsWith("GET /json "))
+        {
+          connection.print(serverHeader("text/json"));
+          connection.print(generateJSON());
+        }
+
+        delay(1);
+        connection.stop();
       }
-      Serial.println("client disconnected");
-    }      
-  #endif
+    }
+    Serial.println("client disconnected");
+  }      
 }
+#endif
 
 #ifdef USE_NETWORK
 String serverHeader(String contentType)
@@ -323,15 +342,21 @@ void xs1Push()
 #ifdef USE_NETWORK
 bool networkRequestIP(IPAddress ip, String url)
 {
+  if (client.connected())
+  {
+    client.stop();
+  }
+  
   if (client.connect(ip, 80))
   {
-    String request = "GET "+url;
-    request += " HTTP/1.1\r\nConnection: close\r\n\r\n";
-    request.toCharArray(requestBuffer, 96);
+    Serial.println("[network] sending request");
+
+    client.print("GET ");
+    client.print(url);
+    client.println(" HTTP/1.0");
+    client.println("Connection: close");
+    client.println();
     
-    Serial.println("[network] sending request:");
-    client.write(requestBuffer);
-    client.stop();
     return true;
   } else
   {
