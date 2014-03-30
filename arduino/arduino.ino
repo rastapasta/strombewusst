@@ -315,8 +315,9 @@ void pointerLoop()
   int pointer = millis() / 1000 / TIMEFRAME % timeStorage;
   if (pointer != storagePointer)
   {
-    storage[storagePointer] = 1;
     storagePointer = pointer;
+    storage[storagePointer] = 0;
+    
     pointerChanged();
   }
 }
