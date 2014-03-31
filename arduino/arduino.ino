@@ -19,7 +19,7 @@
 //#define USE_XS1_SERVER
 #define XS1_IP (10, 11, 10, 18)
 #define XS1_URL "/control?callback=cname&cmd=set_state_sensor&number=9&value="
-#define XS1_TIMEFRAME 3
+#define XS1_TIMEFRAME 2
 
 // Uncomment these lines if you wish to use the the free strombewusstsein Web Service!
 //#define USE_STROMBEWUSST_SERVER
@@ -117,7 +117,8 @@ byte
   lastHour = 0xFF;
 
 unsigned long
-  storageRuntime = 0;
+  storageRuntime = 0,
+  lastTrigger = 0;
 
 unsigned int
   storagePointer = 0,
@@ -203,7 +204,7 @@ void serverCheck()
 
   if (connection)
   {
-    Serial.println("new client");
+    Serial.println("[server] new client");
     while (connection.connected()) {
       if (connection.available()) {          
         // Get the first couple of bytes
@@ -217,7 +218,9 @@ void serverCheck()
         if (header.startsWith("GET / "))
         {
           connection.print(serverHeader("text/html"));
-          connection.println("Hello from StromBewusst!");
+          connection.println("Angelegte Last: ");
+          connection.print((int)(storageSum(60*XS1_TIMEFRAME/TIMEFRAME)*1.25*60/XS1_TIMEFRAME));
+          connection.println();
         }
         
         if(header.startsWith("GET /json "))
@@ -230,7 +233,7 @@ void serverCheck()
         connection.stop();
       }
     }
-    Serial.println("client disconnected");
+    Serial.println("[server] client disconnected");
   }      
 }
 #endif
@@ -256,7 +259,7 @@ void ethernetConnect()
   Serial.print("[network] IP address received: ");
   Serial.println(Ethernet.localIP());
 }
-#endif USE_ETHERNET_SHIELD
+#endif
 
 // All the WiFi related methods only needed when the shield is used
 #ifdef USE_WIFI_SHIELD
@@ -300,7 +303,7 @@ void triggerCheck()
 
 void gotTriggered()
 {
-  Serial.println("Trigger got high!");
+  Serial.println("[trigger] got signal");
   
   storage[storagePointer]++;
 
@@ -345,11 +348,13 @@ void pointerChanged()
     push();
   #endif
 
-  Serial.println("*** Time frame changed ***");
-  Serial.println("Last 15 seconds: "+String(storageSum(1)));
-  Serial.println("Last 30 seconds: "+String(storageSum(2)));
-  Serial.println("Last minute: "+String(storageSum(4)));
-  Serial.println();
+  Serial.println("[loop] *** Time frame changed ***");
+  Serial.println("[data] Last 30 seconds: "+String(storageSum(1)));
+  Serial.println("[data] Last 60 seconds: "+String(storageSum(2)));
+  Serial.println("[data] Last 5 minutes: "+String(storageSum(20)));
+  Serial.print("[data] Currently connected: ");
+  Serial.print((int)(storageSum(60*XS1_TIMEFRAME/TIMEFRAME)*1.25*60/XS1_TIMEFRAME));
+  Serial.println(" Watt");
 }
 
 void push()
@@ -420,9 +425,9 @@ void strombewusstPush()
 #ifdef USE_NETWORK
 String generateJSON()
 {
-  return "{\"history\":{\"15\":"+String(storageSum(1))
-          +",\"30\":"+String(storageSum(2))
-          +",\"60\":"+String(storageSum(4))
+  return "{\"history\":{\"30\":"+String(storageSum(1))
+          +",\"60\":"+String(storageSum(2))
+          +",\"300\":"+String(storageSum(20))
           +"}}";
 }
 #endif
@@ -461,7 +466,7 @@ void neopixelSet(byte red, byte green, byte blue)
 #ifdef USE_NEOPIXEL
 void neopixelLoop()
 {
-  
+  long unsigned time = millis();
 }
 #endif
 
