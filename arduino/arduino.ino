@@ -12,13 +12,11 @@
 #define WIFI_SSID "ssid"
 #define WIFI_KEY "wpakey"
 
-// TODO: Fix IP/net config for both possible shields
-
 // Uncomment this line if you would like to use a NeoPixel for status indication
 //#define USE_NEOPIXEL
 #define NEOPIXEL_PIN 9
 
-#define USE_XS1_SERVER
+//#define USE_XS1_SERVER
 #define XS1_IP (10, 11, 10, 18)
 #define XS1_URL "/control?callback=cname&cmd=set_state_sensor&number=9&value="
 #define XS1_TIMEFRAME 3
@@ -41,40 +39,40 @@
 #define SERVER_PORT 80
 // *************************************
 
-// Enable as needed, depending on either USE_ETHERNET_SHIELD, USE_WIFI_SHIELD and USE_NEOPIXEL
-//#include <Adafruit_NeoPixel.h>
-#include <SPI.h>
-#include <Ethernet.h>
-#include <EthernetUdp.h>
-//#include <WiFi.h>
-//#include <WiFiUdp.h>
+// Dynamic inclusion taking place
 
-// Our prototypes!
-void setup();
-void loop();
+#if defined(USE_NEOPIXEL)
+  #include <Adafruit_NeoPixel.h>
+#endif
+#if defined(ARDUINO) && ARDUINO > 18
+  #include <SPI.h>
+#endif
+
+#if defined(USE_ETHERNET_SHIELD)
+  #include <Ethernet.h>
+  #if defined(USE_STROMBEWUSST_SERVER)
+    #include <EthernetUdp.h>
+  #endif
+#endif
+
+#if defined(USE_WIFI_SHIELD)
+  #include <WiFi.h>
+  #if defined(USE_STROMBEWUSST_SERVER)
+    #include <WiFiUdp.h>
+  #endif
+#endif
+
+// Whyever??? Only prototype needed. TODO.
 void networkConnect();
-void wifiConnect();
-void ethernetConnect();
 
-void serverCheck();
-void networkCheck();
-
-String serverHeader(String);
-bool networkRequestIP(IPAddress, String);
-
-void triggerCheck();
-void gotTriggered();
-
-void push();
-void xs1Push();
-void strombewusstPush();
-
-int storageSum(int);
-String generateJSON();
-
-void pointerLoop();
-void pointerChanged();
-// -- end of prototypes
+// Set up the NeoPixel usage
+#ifdef USE_NEOPIXEL
+  Adafruit_NeoPixel neopixel = Adafruit_NeoPixel(1, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+  uint32_t
+    neopixelBlinkColor,
+    neopixelFadeColor,
+    neopixelFlashColor;
+#endif
 
 // Set up the corresponding network device
 #ifdef USE_ETHERNET_SHIELD
@@ -82,7 +80,9 @@ void pointerChanged();
   EthernetClient client;
   EthernetClient connection;
   EthernetServer server = EthernetServer(SERVER_PORT);
-  EthernetUDP udp;
+  #if defined(USE_STROMBEWUSST_SERVER)
+    EthernetUDP udp;
+  #endif
   byte ethernetMac[] = ETHERNET_MAC;
 #endif
 
@@ -91,8 +91,10 @@ void pointerChanged();
   WiFiClient client;
   WiFiClient connection;
   WiFiServer server = WiFiServer(SERVER_PORT);
-  WiFiUDP udp;
   int connectionStatus = WL_IDLE_STATUS;
+  #if defined(USE_STROMBEWUSST_SERVER)
+    WiFiUDP udp;
+  #endif
 #endif
 
 #ifdef USE_NETWORK
@@ -106,17 +108,21 @@ void pointerChanged();
 #endif
 
 // TimeStorage - stores the # of bytes needed to store the information
-const unsigned int timeStorage = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
-byte storage[timeStorage];
-unsigned long storageRuntime = 0;
-unsigned int storageHour[24];
-unsigned int storageDay[31];
+const unsigned int
+  timeStorage = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
 
-byte lastDay = 0xFF;
-byte lastHour = 0xFF;
+byte
+  storage[timeStorage],
+  lastDay = 0xFF,
+  lastHour = 0xFF;
 
-bool useNetwork = false;
-int storagePointer = -1;
+unsigned long
+  storageRuntime = 0;
+
+unsigned int
+  storagePointer = 0,
+  storageHour[24],
+  storageDay[31];
 
 void setup() {
   Serial.begin(9600);
@@ -124,6 +130,9 @@ void setup() {
   
   pinMode(TRIGGER_PIN, INPUT);
   
+  #ifdef USE_NEOPIXEL
+    neopixelInit();
+  #endif
   #ifdef USE_NETWORK
     networkConnect();
   #endif
@@ -161,8 +170,12 @@ void loop()
     serverCheck();
     networkCheck();
   #endif
+  #ifdef USE_NEOPIXEL
+    neopixelLoop();
+  #endif
 }
 
+#ifdef USE_NETWORK
 void networkCheck()
 {
   // dump all pending data from network connections to the serial interface
@@ -179,6 +192,7 @@ void networkCheck()
   }
   lastConnected = client.connected();
 }
+#endif
 
 #ifdef USE_NETWORK
 void serverCheck()
@@ -186,6 +200,7 @@ void serverCheck()
   connection = server.available();
   // Check for a new connection
   char headerBuffer[10];
+
   if (connection)
   {
     Serial.println("new client");
@@ -355,7 +370,7 @@ void xs1Push()
   url += (int)(storageSum(60*XS1_TIMEFRAME/TIMEFRAME)*1.25*60/XS1_TIMEFRAME);
   Serial.println("[XS1] Update URL: "+url);  
 
-  if (networkRequestIP(ip, url) == true)
+  if (networkRequestIP(ip, url))
   {
     Serial.println("[XS1] updated");
   } else
@@ -427,4 +442,26 @@ int storageSum(int frames)
   }
   return sum;
 }
+
+#ifdef USE_NEOPIXEL
+void neopixelInit()
+{
+  neopixel.begin();   
+}
+#endif
+
+void neopixelSet(byte red, byte green, byte blue)
+{
+  #ifdef USE_NEOPIXEL
+    neopixel.setPixelColor(0, red, green, blue);
+    neopixel.show(); 
+  #endif
+}
+
+#ifdef USE_NEOPIXEL
+void neopixelLoop()
+{
+  
+}
+#endif
 
