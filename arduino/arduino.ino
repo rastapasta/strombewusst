@@ -21,7 +21,7 @@
 #define USE_STROMBEWUSST_SERVER
 #define STROMBEWUSST_IP (188, 40, 78, 147)
 #define STROMBEWUSST_PORT 8888
-#define STROMBEWUSST_KEY {49,50,51,52,53,54,55,56,57,48,49,50,51,52,53,54};
+#define STROMBEWUSST_KEY {0xAA,0xBB,0xCC,0xDD,0xEE,0xFF};
 
 // TriggerPin - the PIN that gets HIGH when 1.25W/h were used on the line
 #define TRIGGER_PIN 8
@@ -33,6 +33,8 @@
 #define STORAGE_HOURS 1
 
 #define SERVER_PORT 80
+//#define LOCAL
+
 // *************************************
 
 #ifdef LOCAL
@@ -93,7 +95,7 @@ void networkConnect();
 
 #ifdef USE_STROMBEWUSST_SERVER
   // UDP Format: <16xkey><1xtimeframe><1xticks>
-  byte udpBuffer[18] = STROMBEWUSST_KEY;
+  byte udpBuffer[8] = STROMBEWUSST_KEY;
   IPAddress strombewusstIP STROMBEWUSST_IP;
 #endif
 
@@ -146,7 +148,7 @@ void networkConnect()
 
   #ifdef USE_STROMBEWUSST_SERVER
     // UDP Format: <32xkey><1xtimeframe><1xticks>
-    udpBuffer[16] = (byte)TIMEFRAME;
+    udpBuffer[6] = (byte)TIMEFRAME;
     udp.begin(STROMBEWUSST_PORT);
   #endif
 }
@@ -412,9 +414,9 @@ void strombewusstPush()
   Serial.println("[strombewusst] push!");
   
   // Set the last byte to the latest storage field
-  udpBuffer[17] = (byte)storageSum(1);
+  udpBuffer[7] = (byte)storageSum(1);
   udp.beginPacket(strombewusstIP, STROMBEWUSST_PORT);
-  udp.write(udpBuffer, 18);
+  udp.write(udpBuffer, 8);
   udp.endPacket();
 }
 #endif
