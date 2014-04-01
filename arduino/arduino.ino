@@ -12,11 +12,7 @@
 #define WIFI_SSID "ssid"
 #define WIFI_KEY "wpakey"
 
-// Uncomment this line if you would like to use a NeoPixel for status indication
-//#define USE_NEOPIXEL
-#define NEOPIXEL_PIN 9
-
-//#define USE_XS1_SERVER
+#define USE_XS1_SERVER
 #define XS1_IP (10, 11, 10, 18)
 #define XS1_URL "/control?callback=cname&cmd=set_state_sensor&number=9&value="
 #define XS1_TIMEFRAME 2
@@ -41,9 +37,6 @@
 
 // Dynamic inclusion taking place
 
-#if defined(USE_NEOPIXEL)
-  #include <Adafruit_NeoPixel.h>
-#endif
 #if defined(ARDUINO) && ARDUINO > 18
   #include <SPI.h>
 #endif
@@ -64,15 +57,6 @@
 
 // Whyever??? Only prototype needed. TODO.
 void networkConnect();
-
-// Set up the NeoPixel usage
-#ifdef USE_NEOPIXEL
-  Adafruit_NeoPixel neopixel = Adafruit_NeoPixel(1, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-  uint32_t
-    neopixelBlinkColor,
-    neopixelFadeColor,
-    neopixelFlashColor;
-#endif
 
 // Set up the corresponding network device
 #ifdef USE_ETHERNET_SHIELD
@@ -98,8 +82,7 @@ void networkConnect();
 #endif
 
 #ifdef USE_NETWORK
-  char requestBuffer[128];
-  boolean lastConnected = false;
+  char readBuffer[13];
 #endif
 
 #ifdef USE_STROMBEWUSST_SERVER
@@ -132,9 +115,6 @@ void setup() {
   
   pinMode(TRIGGER_PIN, INPUT);
   
-  #ifdef USE_NEOPIXEL
-    neopixelInit();
-  #endif
   #ifdef USE_NETWORK
     pinMode(4, OUTPUT);     // SD select pin
     digitalWrite(4, HIGH);  // Disable the SD port
@@ -142,12 +122,12 @@ void setup() {
     digitalWrite(10, LOW);  // Explicitly enable network
     networkConnect();
   #endif
+  
+  Serial.println("[system] end of setup function");
 }
 
 void networkConnect()
 {
-   neopixelSet(64, 32, 0);
-
    #ifdef USE_WIFI_SHIELD
     wifiConnect();
   #endif
@@ -162,9 +142,7 @@ void networkConnect()
     // UDP Format: <32xkey><1xtimeframe><1xticks>
     udpBuffer[16] = (byte)TIMEFRAME;
     udp.begin(STROMBEWUSST_PORT);
-  #endif 
-  
-  neopixelSet(0, 64, 0);
+  #endif
 }
 
 void loop()
@@ -180,36 +158,29 @@ void loop()
     serverCheck();
     networkCheck();
   #endif
-  #ifdef USE_NEOPIXEL
-    neopixelLoop();
-    
-    if (millis()-lastTrigger < 1000)
-    {
-      neopixelSet(255 - (millis()-lastTrigger)*255/1000, 0, 0);
-    } else if (lastTrigger > 0)
-    {
-      neopixelSet(0, 64, 0);
-      lastTrigger = 0;
-    }
-  #endif
 }
 
 #ifdef USE_NETWORK
 void networkCheck()
 {
   // dump all pending data from network connections to the serial interface
-  while (client.available())
+  if (client.available())
   {
-    char c = client.read();
-    Serial.print(c);
-  }
-
-  // stop the client if we lost the connection since the last loop
-  if (!client.connected() && lastConnected) {
-    Serial.println("[network] closing connection");
+    for (byte i=0; i<12; i++)
+    {
+      readBuffer[i] = client.read();
+    }
     client.stop();
+    
+    String response = readBuffer;
+    if (response.substring(9) == "200")
+    {
+      Serial.println("[network] HTTP push successful"); 
+    } else
+    {
+      Serial.println("[network] HTTP push failed - response: "+response.substring(9));
+    }
   }
-  lastConnected = client.connected();
 }
 #endif
 
@@ -391,14 +362,13 @@ void xs1Push()
   IPAddress ip XS1_IP;
   String url = XS1_URL;
   url += (int)(storageSum(60*XS1_TIMEFRAME/TIMEFRAME)*1.25*60/XS1_TIMEFRAME);
-  Serial.println("[XS1] Update URL: "+url);  
 
   if (networkRequestIP(ip, url))
   {
-    Serial.println("[XS1] updated");
+    Serial.println("[XS1] push!");
   } else
   {
-    Serial.println("[XS1] update failed");
+    Serial.println("[XS1] push failed");
   }
 }
 #endif
@@ -406,21 +376,16 @@ void xs1Push()
 #ifdef USE_NETWORK
 bool networkRequestIP(IPAddress ip, String url)
 {
-  if (client.connected())
-  {
-    client.stop();
-  }
+  Serial.print("[network] HTTP request ");
+  Serial.println(url);
   
   if (client.connect(ip, 80))
   {
-    Serial.println("[network] sending request");
-
     client.print("GET ");
     client.print(url);
     client.println(" HTTP/1.0");
     client.println("Connection: close");
     client.println();
-    
     return true;
   } else
   {
@@ -467,26 +432,3 @@ int storageSum(int frames)
   }
   return sum;
 }
-
-#ifdef USE_NEOPIXEL
-void neopixelInit()
-{
-  neopixel.begin();   
-}
-#endif
-
-void neopixelSet(byte red, byte green, byte blue)
-{
-  #ifdef USE_NEOPIXEL
-    neopixel.setPixelColor(0, red, green, blue);
-    neopixel.show(); 
-  #endif
-}
-
-#ifdef USE_NEOPIXEL
-void neopixelLoop()
-{
-  long unsigned time = millis();
-}
-#endif
-
