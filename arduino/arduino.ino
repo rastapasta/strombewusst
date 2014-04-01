@@ -105,7 +105,7 @@ void networkConnect();
 #ifdef USE_STROMBEWUSST_SERVER
   // UDP Format: <16xkey><1xtimeframe><1xticks>
   byte udpBuffer[18] = STROMBEWUSST_KEY;
-  IPAddress strombewusstIP = STROMBEWUSST_SERVER;
+  IPAddress strombewusstIP STROMBEWUSST_SERVER;
 #endif
 
 // stores the # of bytes needed to store the information
