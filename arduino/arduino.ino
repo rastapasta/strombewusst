@@ -12,14 +12,14 @@
 #define WIFI_SSID "ssid"
 #define WIFI_KEY "wpakey"
 
-//#define USE_XS1_SERVER
+#define USE_XS1_SERVER
 #define XS1_IP (10, 11, 10, 18)
 #define XS1_URL "/control?callback=cname&cmd=set_state_sensor&number=9&value="
 #define XS1_TIMEFRAME 2
 
 // Uncomment these lines if you wish to use the the free strombewusstsein Web Service!
 #define USE_STROMBEWUSST_SERVER
-#define STROMBEWUSST_SERVER (188, 40, 78, 147)
+#define STROMBEWUSST_IP (188, 40, 78, 147)
 #define STROMBEWUSST_PORT 8888
 #define STROMBEWUSST_KEY {49,50,51,52,53,54,55,56,57,48,49,50,51,52,53,54};
 
@@ -35,22 +35,27 @@
 #define SERVER_PORT 80
 // *************************************
 
+#ifdef LOCAL
+  #define XS1_IP (192, 168, 178, 21)
+  #define STROMBEWUSST_IP (192, 168, 178, 21)
+#endif
+
 // Dynamic inclusion taking place
 
 #if defined(ARDUINO) && ARDUINO > 18
   #include <SPI.h>
 #endif
 
-#if defined(USE_ETHERNET_SHIELD)
+#ifdef USE_ETHERNET_SHIELD
   #include <Ethernet.h>
-  #if defined(USE_STROMBEWUSST_SERVER)
+  #ifdef USE_STROMBEWUSST_SERVER
     #include <EthernetUdp.h>
   #endif
 #endif
 
-#if defined(USE_WIFI_SHIELD)
+#ifdef USE_WIFI_SHIELD
   #include <WiFi.h>
-  #if defined(USE_STROMBEWUSST_SERVER)
+  #ifdef USE_STROMBEWUSST_SERVER
     #include <WiFiUdp.h>
   #endif
 #endif
@@ -64,7 +69,7 @@ void networkConnect();
   EthernetClient client;
   EthernetClient connection;
   EthernetServer server = EthernetServer(SERVER_PORT);
-  #if defined(USE_STROMBEWUSST_SERVER)
+  #ifdef USE_STROMBEWUSST_SERVER
     EthernetUDP udp;
   #endif
   byte ethernetMac[] = ETHERNET_MAC;
@@ -76,7 +81,7 @@ void networkConnect();
   WiFiClient connection;
   WiFiServer server = WiFiServer(SERVER_PORT);
   int connectionStatus = WL_IDLE_STATUS;
-  #if defined(USE_STROMBEWUSST_SERVER)
+  #ifdef USE_STROMBEWUSST_SERVER
     WiFiUDP udp;
   #endif
 #endif
@@ -89,7 +94,7 @@ void networkConnect();
 #ifdef USE_STROMBEWUSST_SERVER
   // UDP Format: <16xkey><1xtimeframe><1xticks>
   byte udpBuffer[18] = STROMBEWUSST_KEY;
-  IPAddress strombewusstIP STROMBEWUSST_SERVER;
+  IPAddress strombewusstIP STROMBEWUSST_IP;
 #endif
 
 // stores the # of bytes needed to store the information
@@ -213,8 +218,8 @@ void serverCheck()
         connection.println("Connection: close");
         connection.println();
 
-        connection.println("Angelegte Last: ");
-        connection.print(calculateWatt(1));
+        connection.print("Angelegte Last: ");
+        connection.println(calculateWatt(1));
       
       } else if (header.startsWith("GET /json"))
       {
