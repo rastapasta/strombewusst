@@ -12,7 +12,7 @@
 #define WIFI_SSID "ssid"
 #define WIFI_KEY "wpakey"
 
-#define USE_XS1_SERVER
+//#define USE_XS1_SERVER
 #define XS1_IP (10, 11, 10, 18)
 #define XS1_URL "/control?callback=cname&cmd=set_state_sensor&number=9&value="
 #define XS1_TIMEFRAME 2
@@ -83,6 +83,7 @@ void networkConnect();
 
 #ifdef USE_NETWORK
   char readBuffer[13];
+  char headerBuffer[10];
 #endif
 
 #ifdef USE_STROMBEWUSST_SERVER
@@ -178,7 +179,8 @@ void networkCheck()
       Serial.println("[network] HTTP push successful"); 
     } else
     {
-      Serial.println("[network] HTTP push failed - response: "+response.substring(9));
+      Serial.print("[network] HTTP push failed - response: ");
+      Serial.println(response.substring(9));
     }
   }
 }
@@ -189,51 +191,49 @@ void serverCheck()
 {
   connection = server.available();
   // Check for a new connection
-  char headerBuffer[10];
-
   if (connection)
   {
     Serial.println("[server] new client");
-    while (connection.connected()) {
-      if (connection.available()) {          
-        // Get the first couple of bytes
-        for (int i=0; i<10; i++)
-        {
-          headerBuffer[i] = connection.read();
-        }
-        connection.flush();
-        Serial.println(headerBuffer);
-        String header = headerBuffer;
-        if (header.startsWith("GET / "))
-        {
-          connection.print(serverHeader("text/html"));
-          connection.println("Angelegte Last: ");
-          connection.print((int)(storageSum(60*XS1_TIMEFRAME/TIMEFRAME)*1.25*60/XS1_TIMEFRAME));
-          connection.println();
-        }
-        
-        if(header.startsWith("GET /json "))
-        {
-          connection.print(serverHeader("text/json"));
-          connection.print(generateJSON());
-        }
-
-        delay(1);
-        connection.stop();
+    if (connection.available()) {          
+      // Get the first couple of bytes
+      for (int i=0; i<9; i++)
+      {
+        headerBuffer[i] = connection.read();
       }
+      connection.flush();
+
+      Serial.print("[server] request: ");
+      Serial.println(headerBuffer);
+
+      String header = headerBuffer;
+      if (header.startsWith("GET / "))
+      {
+        connection.println("HTTP/1.1 200 OK");
+        connection.println("Content-Type: text/html");
+        connection.println("Connection: close");
+        connection.println();
+
+        connection.println("Angelegte Last: ");
+        connection.print(calculateWatt(1));
+      
+      } else if (header.startsWith("GET /json"))
+      {
+        connection.println("HTTP/1.1 200 OK");
+        connection.println("Content-Type: text/json");
+        connection.println("Connection: close");
+        connection.println();
+        connection.println("{\"foo\":\"bar\"}");
+      } else
+      {
+        connection.println("HTTP/1.1 404 Not found");
+        connection.println("");
+      }
+
+      delay(10);
+      connection.stop();
     }
     Serial.println("[server] client disconnected");
   }      
-}
-#endif
-
-#ifdef USE_NETWORK
-String serverHeader(String contentType)
-{
-  return
-    String("HTTP/1.1 200 OK\r\n")+
-    "Content-Type: "+contentType+"\r\n"+
-    "Connection: close\r\n\r\n";
 }
 #endif
 
@@ -338,11 +338,18 @@ void pointerChanged()
   #endif
 
   Serial.println("[loop] *** Time frame changed ***");
-  Serial.println("[data] Last 30 seconds: "+String(storageSum(1)));
-  Serial.println("[data] Last 60 seconds: "+String(storageSum(2)));
-  Serial.println("[data] Last 5 minutes: "+String(storageSum(20)));
+
+  Serial.print("[data] Last 30 seconds: ");
+  Serial.println(storageSum(1));
+
+  Serial.print("[data] Last 60 seconds: ");
+  Serial.println(storageSum(2));
+  
+  Serial.print("[data] Last 5 minutes: ");
+  Serial.println(storageSum(20));
+  
   Serial.print("[data] Currently connected: ");
-  Serial.print((int)(storageSum(60*XS1_TIMEFRAME/TIMEFRAME)*1.25*60/XS1_TIMEFRAME));
+  Serial.print(calculateWatt(2));
   Serial.println(" Watt");
 }
 
@@ -361,7 +368,7 @@ void xs1Push()
 {
   IPAddress ip XS1_IP;
   String url = XS1_URL;
-  url += (int)(storageSum(60*XS1_TIMEFRAME/TIMEFRAME)*1.25*60/XS1_TIMEFRAME);
+  url += calculateWatt(XS1_TIMEFRAME);
 
   if (networkRequestIP(ip, url))
   {
@@ -407,17 +414,7 @@ void strombewusstPush()
 }
 #endif
 
-#ifdef USE_NETWORK
-String generateJSON()
-{
-  return "{\"history\":{\"30\":"+String(storageSum(1))
-          +",\"60\":"+String(storageSum(2))
-          +",\"300\":"+String(storageSum(20))
-          +"}}";
-}
-#endif
-
-int storageSum(int frames)
+int storageSum(unsigned int frames)
 {
   int sum = 0;
   int pos = storagePointer;
@@ -428,7 +425,12 @@ int storageSum(int frames)
     {
       pos = storageSize-1;
     }
-    sum += (int)storage[pos];
+    sum += storage[pos];
   }
   return sum;
+}
+
+int calculateWatt(unsigned int minutes)
+{
+  return storageSum(60 / TIMEFRAME * minutes)*1.25*60/minutes;
 }
