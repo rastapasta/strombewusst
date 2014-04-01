@@ -22,10 +22,10 @@
 #define XS1_TIMEFRAME 2
 
 // Uncomment these lines if you wish to use the the free strombewusstsein Web Service!
-//#define USE_STROMBEWUSST_SERVER
-#define STROMBEWUSST_SERVER "se.esse.es"
+#define USE_STROMBEWUSST_SERVER
+#define STROMBEWUSST_SERVER (188, 40, 78, 147)
 #define STROMBEWUSST_PORT 8888
-#define STROMBEWUSST_KEY "1234567890123456789012"
+#define STROMBEWUSST_KEY {49,50,51,52,53,54,55,56,57,48,49,50,51,52,53,54};
 
 // TriggerPin - the PIN that gets HIGH when 1.25W/h were used on the line
 #define TRIGGER_PIN 8
@@ -103,16 +103,17 @@ void networkConnect();
 #endif
 
 #ifdef USE_STROMBEWUSST_SERVER
-  // UDP Format: <32xkey><1xtimeframe><1xticks>
-  char udpBuffer[34] = STROMBEWUSST_KEY;
+  // UDP Format: <16xkey><1xtimeframe><1xticks>
+  byte udpBuffer[18] = STROMBEWUSST_KEY;
+  IPAddress strombewusstIP = STROMBEWUSST_SERVER;
 #endif
 
-// TimeStorage - stores the # of bytes needed to store the information
+// stores the # of bytes needed to store the information
 const unsigned int
-  timeStorage = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
+  storageSize = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
 
 byte
-  storage[timeStorage],
+  storage[storageSize],
   lastDay = 0xFF,
   lastHour = 0xFF;
 
@@ -135,12 +136,18 @@ void setup() {
     neopixelInit();
   #endif
   #ifdef USE_NETWORK
+    pinMode(4, OUTPUT);     // SD select pin
+    digitalWrite(4, HIGH);  // Disable the SD port
+    pinMode(10, OUTPUT);    // Ethernet//Wifi select pin
+    digitalWrite(10, LOW);  // Explicitly enable network
     networkConnect();
   #endif
 }
 
 void networkConnect()
 {
+   neopixelSet(64, 32, 0);
+
    #ifdef USE_WIFI_SHIELD
     wifiConnect();
   #endif
@@ -153,9 +160,11 @@ void networkConnect()
 
   #ifdef USE_STROMBEWUSST_SERVER
     // UDP Format: <32xkey><1xtimeframe><1xticks>
-    udpBuffer[32] = TIMEFRAME;
+    udpBuffer[16] = (byte)TIMEFRAME;
     udp.begin(STROMBEWUSST_PORT);
   #endif 
+  
+  neopixelSet(0, 64, 0);
 }
 
 void loop()
@@ -173,6 +182,15 @@ void loop()
   #endif
   #ifdef USE_NEOPIXEL
     neopixelLoop();
+    
+    if (millis()-lastTrigger < 1000)
+    {
+      neopixelSet(255 - (millis()-lastTrigger)*255/1000, 0, 0);
+    } else if (lastTrigger > 0)
+    {
+      neopixelSet(0, 64, 0);
+      lastTrigger = 0;
+    }
   #endif
 }
 
@@ -330,7 +348,7 @@ void gotTriggered()
 void pointerLoop()
 {
   // Tick forward each x-Timeframe seconds
-  int pointer = millis() / 1000 / TIMEFRAME % timeStorage;
+  int pointer = millis() / 1000 / TIMEFRAME % storageSize;
   if (pointer != storagePointer)
   {
     storagePointer = pointer;
@@ -414,13 +432,15 @@ bool networkRequestIP(IPAddress ip, String url)
 #ifdef USE_STROMBEWUSST_SERVER 
 void strombewusstPush()
 {
-  // Set the last byte the the last frame's value
-  udpBuffer[33] = storageSum(1);
-  udp.beginPacket(STROMBEWUSST_SERVER, STROMBEWUSST_PORT);
-  udp.write(udpBuffer);
+  Serial.println("[strombewusst] push!");
+  
+  // Set the last byte to the latest storage field
+  udpBuffer[17] = (byte)storageSum(1);
+  udp.beginPacket(strombewusstIP, STROMBEWUSST_PORT);
+  udp.write(udpBuffer, 18);
   udp.endPacket();
 }
-#endif 
+#endif
 
 #ifdef USE_NETWORK
 String generateJSON()
@@ -441,7 +461,7 @@ int storageSum(int frames)
     pos--;
     if (pos == -1)
     {
-      pos = timeStorage-1;
+      pos = storageSize-1;
     }
     sum += (int)storage[pos];
   }
