@@ -23,14 +23,16 @@
 #define STROMBEWUSST_PORT 8888
 #define STROMBEWUSST_KEY {0xAA,0xBB,0xCC,0xDD,0xEE,0xFF};
 
-// TriggerPin - the PIN that gets HIGH when 1.25W/h were used on the line
-#define TRIGGER_PIN 8
+// Trigger interrupt port - the PIN that gets HIGH when 1.25W/h were used on the line
+//    0 -> PIN 2
+//    1 -> PIN 3
+#define TRIGGER_INT 0  
 
 // TIMEFRAME defines the datastorages time segmenting (256 hits in that time frame max)
-#define TIMEFRAME 30
+#define TIMEFRAME 15
 
-// STORAGE_HOURS defines how many hours of detailed information are stored in RAM
-#define STORAGE_HOURS 1
+// STORAGE_MINUTES defines how many minutes of detailed information are stored in RAM
+#define STORAGE_MINUTES 10
 
 #define SERVER_PORT 80
 //#define LOCAL
@@ -91,6 +93,7 @@ void networkConnect();
 #ifdef USE_NETWORK
   char readBuffer[13];
   char headerBuffer[10];
+  char sendBuffer[128];
 #endif
 
 #ifdef USE_STROMBEWUSST_SERVER
@@ -101,7 +104,10 @@ void networkConnect();
 
 // stores the # of bytes needed to store the information
 const unsigned int
-  storageSize = 60 / TIMEFRAME * 60 * STORAGE_HOURS;
+  storageSize = 60 / TIMEFRAME * STORAGE_MINUTES;
+
+// Gets incremented by the interrupt method gotSignal
+volatile byte signals = 0;
 
 byte
   storage[storageSize],
@@ -121,7 +127,8 @@ void setup() {
   Serial.begin(9600);
   Serial.println("*** StromBewusst - Arduino FW ***");
   
-  pinMode(TRIGGER_PIN, INPUT);
+  // Attach an interrupt 
+  attachInterrupt(TRIGGER_INT, gotSignal, RISING); 
   
   #ifdef USE_NETWORK
     pinMode(4, OUTPUT);     // SD select pin
@@ -131,7 +138,7 @@ void setup() {
     networkConnect();
   #endif
   
-  Serial.println("[system] end of setup function");
+  Serial.println("[system] end of setup method");
 }
 
 void networkConnect()
@@ -157,9 +164,6 @@ void loop()
 {
   // Check if time moved on to a new frame
   pointerLoop();
-  
-  // Check if we got a signal right now
-  triggerCheck();
  
   #ifdef USE_NETWORK 
     // Check if we got an incoming connection to our server
@@ -286,40 +290,10 @@ void wifiConnect()
 }
 #endif
 
-void triggerCheck()
+// Simple as it is: increment on each interrupt (rising low -> high on signal pin)
+void gotSignal()
 {
-  // Check if we got an trigger signal
-  if (digitalRead(TRIGGER_PIN) == HIGH)
-  {
-    // Wait until input gets LOW again
-    while(digitalRead(TRIGGER_PIN) == HIGH);
-    gotTriggered();
-  }
-}
-
-void gotTriggered()
-{
-  Serial.println("[trigger] got signal");
-  
-  storage[storagePointer]++;
-
-  storageRuntime++;
-
-  byte day = millis() / 1000 / 60 / 24 % 31;
-  if (day != lastDay)
-  {
-    lastDay = day;
-    storageDay[day] = 1;
-  }
-  storageDay[day]++;
-  
-  byte hour = millis() / 1000 / 60 % 24;
-  if (hour != lastHour)
-  {
-    lastHour = hour;
-    storageHour[hour] = 0;
-  }
-  storageHour[hour]++;
+  signals++;
 }
 
 
@@ -329,6 +303,8 @@ void pointerLoop()
   int pointer = millis() / 1000 / TIMEFRAME % storageSize;
   if (pointer != storagePointer)
   {
+    storeSignals();
+    
     storagePointer = pointer;
     storage[storagePointer] = 0;
     
@@ -336,10 +312,33 @@ void pointerLoop()
   }
 }
 
+void storeSignals()
+{
+
+  storage[storagePointer] = signals;
+  storageRuntime += signals;
+
+  byte day = millis() / 1000 / 60 / 24 % 31;
+  if (day != lastDay)
+  {
+    lastDay = day;
+    storageDay[day] = 0;
+  }
+  storageDay[day] += signals;
+  
+  byte hour = millis() / 1000 / 60 % 24;
+  if (hour != lastHour)
+  {
+    lastHour = hour;
+    storageHour[hour] = 0;
+  }
+  storageHour[hour] += signals;
+
+  signals = 0; 
+}
+
 void pointerChanged()
 {
-  storage[storagePointer] = 0;
-
   #ifdef USE_NETWORK
     push();
   #endif

@@ -19,7 +19,7 @@ server.on "message", (msg, rinfo) ->
 
   key = ''
   for i in [0..5]
-    key += data.charCodeAt(i).toString(16);
+    key += data.charCodeAt(i).toString 16
 
   framesize = data.charCodeAt 6
   impulses = data.charCodeAt 7
