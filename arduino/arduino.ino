@@ -26,7 +26,7 @@
 // Trigger interrupt port - the PIN that gets HIGH when 1.25W/h were used on the line
 //    0 -> PIN 2
 //    1 -> PIN 3
-#define TRIGGER_INT 0  
+#define TRIGGER_INT 0
 
 // TIMEFRAME defines the datastorages time segmenting (256 hits in that time frame max)
 #define TIMEFRAME 15
@@ -57,7 +57,7 @@
   #endif
 #endif
 
-#ifdef USE_WIFI_SHIELD
+#if defined(USE_WIFI_SHIELD)
   #include <WiFi.h>
   #ifdef USE_STROMBEWUSST_SERVER
     #include <WiFiUdp.h>
@@ -125,11 +125,11 @@ unsigned int
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("*** StromBewusst - Arduino FW ***");
-  
-  // Attach an interrupt 
-  attachInterrupt(TRIGGER_INT, gotSignal, RISING); 
-  
+  Serial.println(F("*** StromBewusst - Arduino FW ***"));
+
+  // Attach an interrupt
+  attachInterrupt(TRIGGER_INT, gotSignal, RISING);
+
   #ifdef USE_NETWORK
     pinMode(4, OUTPUT);     // SD select pin
     digitalWrite(4, HIGH);  // Disable the SD port
@@ -137,8 +137,8 @@ void setup() {
     digitalWrite(10, LOW);  // Explicitly enable network
     networkConnect();
   #endif
-  
-  Serial.println("[system] end of setup method");
+
+  Serial.println(F("[system] end of setup method"));
 }
 
 void networkConnect()
@@ -164,8 +164,8 @@ void loop()
 {
   // Check if time moved on to a new frame
   pointerLoop();
- 
-  #ifdef USE_NETWORK 
+
+  #ifdef USE_NETWORK
     // Check if we got an incoming connection to our server
     serverCheck();
     networkCheck();
@@ -183,14 +183,14 @@ void networkCheck()
       readBuffer[i] = client.read();
     }
     client.stop();
-    
+
     String response = readBuffer;
     if (response.substring(9) == "200")
     {
-      Serial.println("[network] HTTP push successful"); 
+      Serial.println(F("[network] HTTP push successful"));
     } else
     {
-      Serial.print("[network] HTTP push failed - response: ");
+      Serial.print(F("[network] HTTP push failed - response: "));
       Serial.println(response.substring(9));
     }
   }
@@ -204,8 +204,8 @@ void serverCheck()
   // Check for a new connection
   if (connection)
   {
-    Serial.println("[server] new client");
-    if (connection.available()) {          
+    Serial.println(F("[server] new client"));
+    if (connection.available()) {
       // Get the first couple of bytes
       for (int i=0; i<9; i++)
       {
@@ -213,38 +213,38 @@ void serverCheck()
       }
       connection.flush();
 
-      Serial.print("[server] request: ");
+      Serial.print(F("[server] request: "));
       Serial.println(headerBuffer);
 
       String header = headerBuffer;
       if (header.startsWith("GET / "))
       {
-        connection.println("HTTP/1.1 200 OK");
-        connection.println("Content-Type: text/html");
-        connection.println("Connection: close");
+        connection.println(F("HTTP/1.1 200 OK"));
+        connection.println(F("Content-Type: text/html"));
+        connection.println(F("Connection: close"));
         connection.println();
 
-        connection.print("Angelegte Last: ");
+        connection.print(F("Angelegte Last: "));
         connection.println(calculateWatt(1));
-      
+
       } else if (header.startsWith("GET /json"))
       {
-        connection.println("HTTP/1.1 200 OK");
-        connection.println("Content-Type: text/json");
-        connection.println("Connection: close");
+        connection.println(F("HTTP/1.1 200 OK"));
+        connection.println(F("Content-Type: text/json"));
+        connection.println(F("Connection: close"));
         connection.println();
-        connection.println("{\"foo\":\"bar\"}");
+        connection.println(F("{\"foo\":\"bar\"}"));
       } else
       {
-        connection.println("HTTP/1.1 404 Not found");
-        connection.println("");
+        connection.println(F("HTTP/1.1 404 Not found"));
+        connection.println();
       }
 
       delay(10);
       connection.stop();
     }
-    Serial.println("[server] client disconnected");
-  }      
+    Serial.println(F("[server] client disconnected"));
+  }
 }
 #endif
 
@@ -252,11 +252,11 @@ void serverCheck()
 #ifdef USE_ETHERNET_SHIELD
 void ethernetConnect()
 {
-  Serial.println("[network] connecting via Ethernet shield");
+  Serial.println(F("[network] connecting via Ethernet shield"));
   Ethernet.begin(ethernetMac);
 
   // print our Ethernet shield's IP address
-  Serial.print("[network] IP address received: ");
+  Serial.print(F("[network] IP address received: "));
   Serial.println(Ethernet.localIP());
 }
 #endif
@@ -265,17 +265,17 @@ void ethernetConnect()
 #ifdef USE_WIFI_SHIELD
 void wifiConnect()
 {
-  Serial.println("[network] Connecting via WiFi shield"); 
+  Serial.println(F("[network] Connecting via WiFi shield"));
 
   // check for the presence of the shield
   if (WiFi.status() == WL_NO_SHIELD) {
-    Serial.println("[network] WiFi shield not present"); 
+    Serial.println(F("[network] WiFi shield not present"));
     while(1);
   }
 
-  // connect to our network  
-  while ( connectionStatus != WL_CONNECTED) { 
-    Serial.print("[network] Joining network ");
+  // connect to our network
+  while ( connectionStatus != WL_CONNECTED) {
+    Serial.print(F("[network] Joining network "));
     Serial.println(WIFI_SSID);
 
     connectionStatus = WiFi.begin(WIFI_SSID, WIFI_KEY);
@@ -285,7 +285,7 @@ void wifiConnect()
   }
 
   // print our WiFi shield's IP address
-  Serial.print("[network] IP address received: ");
+  Serial.print(F("[network] IP address received: "));
   Serial.println(WiFi.localIP());
 }
 #endif
@@ -304,10 +304,10 @@ void pointerLoop()
   if (pointer != storagePointer)
   {
     storeSignals();
-    
+
     storagePointer = pointer;
     storage[storagePointer] = 0;
-    
+
     pointerChanged();
   }
 }
@@ -325,7 +325,7 @@ void storeSignals()
     storageDay[day] = 0;
   }
   storageDay[day] += signals;
-  
+
   byte hour = millis() / 1000 / 60 % 24;
   if (hour != lastHour)
   {
@@ -334,7 +334,7 @@ void storeSignals()
   }
   storageHour[hour] += signals;
 
-  signals = 0; 
+  signals = 0;
 }
 
 void pointerChanged()
@@ -343,20 +343,20 @@ void pointerChanged()
     push();
   #endif
 
-  Serial.println("[loop] *** Time frame changed ***");
+  Serial.println(F("[loop] *** Time frame changed ***"));
 
-  Serial.print("[data] Last 30 seconds: ");
+  Serial.print(F("[data] Last 30 seconds: "));
   Serial.println(storageSum(1));
 
-  Serial.print("[data] Last 60 seconds: ");
+  Serial.print(F("[data] Last 60 seconds: "));
   Serial.println(storageSum(2));
-  
-  Serial.print("[data] Last 5 minutes: ");
+
+  Serial.print(F("[data] Last 5 minutes: "));
   Serial.println(storageSum(20));
-  
-  Serial.print("[data] Currently connected: ");
+
+  Serial.print(F("[data] Currently connected: "));
   Serial.print(calculateWatt(2));
-  Serial.println(" Watt");
+  Serial.println(F(" Watt"));
 }
 
 void push()
@@ -378,10 +378,10 @@ void xs1Push()
 
   if (networkRequestIP(ip, url))
   {
-    Serial.println("[XS1] push!");
+    Serial.println(F("[XS1] push!"));
   } else
   {
-    Serial.println("[XS1] push failed");
+    Serial.println(F("[XS1] push failed"));
   }
 }
 #endif
@@ -389,15 +389,15 @@ void xs1Push()
 #ifdef USE_NETWORK
 bool networkRequestIP(IPAddress ip, String url)
 {
-  Serial.print("[network] HTTP request ");
+  Serial.print(F("[network] HTTP request "));
   Serial.println(url);
-  
+
   if (client.connect(ip, 80))
   {
-    client.print("GET ");
+    client.print(F("GET "));
     client.print(url);
-    client.println(" HTTP/1.0");
-    client.println("Connection: close");
+    client.println(F(" HTTP/1.0"));
+    client.println(F("Connection: close"));
     client.println();
     return true;
   } else
@@ -407,11 +407,11 @@ bool networkRequestIP(IPAddress ip, String url)
 }
 #endif
 
-#ifdef USE_STROMBEWUSST_SERVER 
+#ifdef USE_STROMBEWUSST_SERVER
 void strombewusstPush()
 {
-  Serial.println("[strombewusst] push!");
-  
+  Serial.println(F("[strombewusst] push!"));
+
   // Set the last byte to the latest storage field
   udpBuffer[7] = (byte)storageSum(1);
   udp.beginPacket(strombewusstIP, STROMBEWUSST_PORT);
