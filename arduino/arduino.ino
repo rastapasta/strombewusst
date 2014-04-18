@@ -57,7 +57,7 @@
   #endif
 #endif
 
-#if defined(USE_WIFI_SHIELD)
+#ifdef USE_WIFI_SHIELD
   #include <WiFi.h>
   #ifdef USE_STROMBEWUSST_SERVER
     #include <WiFiUdp.h>
@@ -93,7 +93,7 @@ void networkConnect();
 #ifdef USE_NETWORK
   char readBuffer[13];
   char headerBuffer[10];
-  char sendBuffer[128];
+  char sendBuffer[160];
 #endif
 
 #ifdef USE_STROMBEWUSST_SERVER
@@ -392,13 +392,11 @@ bool networkRequestIP(IPAddress ip, String url)
   Serial.print(F("[network] HTTP request "));
   Serial.println(url);
 
+
   if (client.connect(ip, 80))
   {
-    client.print(F("GET "));
-    client.print(url);
-    client.println(F(" HTTP/1.0"));
-    client.println(F("Connection: close"));
-    client.println();
+    String request = "GET "+url+" HTTP/1.0\r\nConnection: close\r\n\r\n";
+    client.print(request);
     return true;
   } else
   {
