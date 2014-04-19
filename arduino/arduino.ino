@@ -29,10 +29,10 @@
 #define TRIGGER_INT 0
 
 // TIMEFRAME defines the datastorages time segmenting (256 hits in that time frame max)
-#define TIMEFRAME 15
+#define TIMEFRAME 60
 
 // STORAGE_MINUTES defines how many minutes of detailed information are stored in RAM
-#define STORAGE_MINUTES 10
+#define STORAGE_MINUTES 30
 
 #define SERVER_PORT 80
 //#define LOCAL
@@ -70,8 +70,9 @@ void networkConnect();
 // Set up the corresponding network device
 #ifdef USE_ETHERNET_SHIELD
   #define USE_NETWORK
-  EthernetClient client;
-  EthernetClient connection;
+  EthernetClient
+    client,
+    connection;
   EthernetServer server = EthernetServer(SERVER_PORT);
   #ifdef USE_STROMBEWUSST_SERVER
     EthernetUDP udp;
@@ -81,8 +82,9 @@ void networkConnect();
 
 #ifdef USE_WIFI_SHIELD
   #define USE_NETWORK
-  WiFiClient client;
-  WiFiClient connection;
+  WiFiClient
+    client,
+    connection;
   WiFiServer server = WiFiServer(SERVER_PORT);
   int connectionStatus = WL_IDLE_STATUS;
   #ifdef USE_STROMBEWUSST_SERVER
@@ -91,9 +93,10 @@ void networkConnect();
 #endif
 
 #ifdef USE_NETWORK
-  char readBuffer[13];
-  char headerBuffer[10];
-  char sendBuffer[160];
+  char
+    readBuffer[13],
+    headerBuffer[10],
+    sendBuffer[128];
 #endif
 
 #ifdef USE_STROMBEWUSST_SERVER
@@ -115,8 +118,7 @@ byte
   lastHour = 0xFF;
 
 unsigned long
-  storageRuntime = 0,
-  lastTrigger = 0;
+  storageRuntime = 0;
 
 unsigned int
   storagePointer = 0,
@@ -373,8 +375,8 @@ void push()
 void xs1Push()
 {
   IPAddress ip XS1_IP;
-  String url = XS1_URL;
-  url += calculateWatt(XS1_TIMEFRAME);
+  char url[100];
+  sprintf(url, "%s%i", F(XS1_URL), calculateWatt(XS1_TIMEFRAME));
 
   if (networkRequestIP(ip, url))
   {
@@ -387,16 +389,16 @@ void xs1Push()
 #endif
 
 #ifdef USE_NETWORK
-bool networkRequestIP(IPAddress ip, String url)
+bool networkRequestIP(IPAddress ip, char* url)
 {
   Serial.print(F("[network] HTTP request "));
   Serial.println(url);
 
-
   if (client.connect(ip, 80))
   {
-    String request = "GET "+url+" HTTP/1.0\r\nConnection: close\r\n\r\n";
-    client.print(request);
+    sprintf(sendBuffer, "GET %s HTTP/1.0", url);
+    client.println(sendBuffer);
+    client.println(F("Connection: close\r\n"));
     return true;
   } else
   {
