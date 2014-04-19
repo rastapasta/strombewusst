@@ -15,7 +15,6 @@
 #define USE_XS1_SERVER
 #define XS1_IP (10, 11, 10, 18)
 #define XS1_URL "/control?callback=cname&cmd=set_state_sensor&number=9&value="
-#define XS1_TIMEFRAME 2
 
 // Uncomment these lines if you wish to use the the free strombewusstsein Web Service!
 #define USE_STROMBEWUSST_SERVER
@@ -111,6 +110,8 @@ const unsigned int
 
 // Gets incremented by the interrupt method gotSignal
 volatile byte signals = 0;
+volatile unsigned int lastWatts = 0;
+volatile unsigned long lastSignal = 0;
 
 byte
   storage[storageSize],
@@ -295,6 +296,9 @@ void wifiConnect()
 // Simple as it is: increment on each interrupt (rising low -> high on signal pin)
 void gotSignal()
 {
+  unsigned long now = millis();
+  lastWatts = 4500000 / (now-lastSignal);
+  lastSignal = now;
   signals++;
 }
 
@@ -376,7 +380,7 @@ void xs1Push()
 {
   IPAddress ip XS1_IP;
   char url[100];
-  sprintf(url, "%s%i", F(XS1_URL), calculateWatt(XS1_TIMEFRAME));
+  sprintf(url, "%s%i", F(XS1_URL), lastWatts);
 
   if (networkRequestIP(ip, url))
   {
