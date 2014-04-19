@@ -380,7 +380,7 @@ void xs1Push()
 {
   IPAddress ip XS1_IP;
   char url[100];
-  sprintf(url, "%s%i", XS1_URL, lastWatts);
+  sprintf(url, "%s%u", XS1_URL, lastWatts);
 
   if (networkRequestIP(ip, url))
   {
