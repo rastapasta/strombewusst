@@ -361,7 +361,7 @@ void pointerChanged()
   Serial.println(storageSum(20));
 
   Serial.print(F("[data] Currently connected: "));
-  Serial.print(calculateWatt(2));
+  Serial.print(lastWatts);
   Serial.println(F(" Watt"));
 }
 
@@ -380,7 +380,7 @@ void xs1Push()
 {
   IPAddress ip XS1_IP;
   char url[100];
-  sprintf(url, "%s%i", F(XS1_URL), lastWatts);
+  sprintf(url, "%s%i", XS1_URL, lastWatts);
 
   if (networkRequestIP(ip, url))
   {
