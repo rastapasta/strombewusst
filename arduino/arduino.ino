@@ -108,20 +108,20 @@ void networkConnect();
 const unsigned int
   storageSize = 60 / TIMEFRAME * STORAGE_MINUTES;
 
-// Gets incremented by the interrupt method gotSignal
-volatile byte signals = 0;
-volatile unsigned int lastWatts = 0;
-volatile unsigned long lastSignal = 0;
+volatile bool gotSignal = false;
 
 byte
+  signals = 0,
   storage[storageSize],
   lastDay = 0xFF,
   lastHour = 0xFF;
 
 unsigned long
-  storageRuntime = 0;
+  storageRuntime = 0,
+  lastSignal = 0;
 
 unsigned int
+  currentWatts = 0,
   storagePointer = 0,
   storageHour[24],
   storageDay[31];
@@ -131,7 +131,7 @@ void setup() {
   Serial.println(F("*** StromBewusst - Arduino FW ***"));
 
   // Attach an interrupt
-  attachInterrupt(TRIGGER_INT, gotSignal, RISING);
+  attachInterrupt(TRIGGER_INT, handleSignal, RISING);
 
   #ifdef USE_NETWORK
     pinMode(4, OUTPUT);     // SD select pin
@@ -165,6 +165,12 @@ void networkConnect()
 
 void loop()
 {
+  if (gotSignal)
+  {
+    processSignal();
+    gotSignal = false;
+  }
+
   // Check if time moved on to a new frame
   pointerLoop();
 
@@ -293,15 +299,19 @@ void wifiConnect()
 }
 #endif
 
-// Simple as it is: increment on each interrupt (rising low -> high on signal pin)
-void gotSignal()
+// Set the volatile flag to handle the signal in the next loop run
+void handleSignal()
+{
+  gotSignal = true;
+}
+
+void processSignal()
 {
   unsigned long now = millis();
-  lastWatts = 4500000 / (now-lastSignal);
+  currentWatts = 4500000 / (now-lastSignal);
   lastSignal = now;
   signals++;
 }
-
 
 void pointerLoop()
 {
@@ -345,24 +355,27 @@ void storeSignals()
 
 void pointerChanged()
 {
+  Serial.println(F("[loop] *** Time frame changed ***"));
+
+  Serial.print(F("[data] Last minute: "));
+  Serial.print(storageSum(1)*1.25);
+  Serial.println(F(" Wh"));
+
+  Serial.print(F("[data] Last 2 minutes:"));
+  Serial.print(storageSum(2)*1.25);
+  Serial.println(F(" Wh"));
+
+  Serial.print(F("[data] Last 5 minutes: "));
+  Serial.print(storageSum(5)*1.25);
+  Serial.println(F(" Wh"));
+
+  Serial.print(F("[data] Currently connected: "));
+  Serial.print(currentWatts);
+  Serial.println(F(" Watt"));
+
   #ifdef USE_NETWORK
     push();
   #endif
-
-  Serial.println(F("[loop] *** Time frame changed ***"));
-
-  Serial.print(F("[data] Last 30 seconds: "));
-  Serial.println(storageSum(1));
-
-  Serial.print(F("[data] Last 60 seconds: "));
-  Serial.println(storageSum(2));
-
-  Serial.print(F("[data] Last 5 minutes: "));
-  Serial.println(storageSum(20));
-
-  Serial.print(F("[data] Currently connected: "));
-  Serial.print(lastWatts);
-  Serial.println(F(" Watt"));
 }
 
 void push()
@@ -380,7 +393,7 @@ void xs1Push()
 {
   IPAddress ip XS1_IP;
   char url[100];
-  sprintf(url, "%s%u", XS1_URL, lastWatts);
+  sprintf(url, "%s%u", XS1_URL, currentWatts);
 
   if (networkRequestIP(ip, url))
   {
