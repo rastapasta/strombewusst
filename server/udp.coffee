@@ -33,7 +33,7 @@ server.on "message", (msg, rinfo) ->
     unless meter
       console.log "[data] couldn't find corresponding meter"
     else
-      db.signals.save meter: meter._id, timeframe: timeframe, impulses: impulses, (err) ->
+      db.signals.save time: new Date(), meter: meter._id, timeframe: timeframe, impulses: impulses, (err) ->
         if err
           console.log "[data] wasn't able to save... #{err}"
         else

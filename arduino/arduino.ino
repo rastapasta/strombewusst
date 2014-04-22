@@ -233,8 +233,11 @@ void serverCheck()
         connection.println(F("Connection: close"));
         connection.println();
 
-        connection.print(F("Angelegte Last: "));
-        connection.println(calculateWatt(1));
+        connection.print(F("Aktuell angelegte Last: "));
+        connection.print(currentWatts);
+        connection.print(F("<br/>Aktuelle Kosten pro Stunde: "));
+        connection.print(0.0025*currentWatts);
+        connection.println(F(" &euro; cents"));
 
       } else if (header.startsWith("GET /json"))
       {
