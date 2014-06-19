@@ -11,6 +11,7 @@
 // Controllers
 #import "JBChartListViewController.h"
 #import "JBBaseNavigationController.h"
+#import "JBBarChartViewController.h"
 
 @implementation AppDelegate
 
@@ -19,7 +20,7 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {    
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    JBBaseNavigationController *navigationController = [[JBBaseNavigationController alloc] initWithRootViewController:[[JBChartListViewController alloc] init]];
+    JBBaseNavigationController *navigationController = [[JBBaseNavigationController alloc] initWithRootViewController:[[JBBarChartViewController alloc] init]];
     self.window.rootViewController = navigationController;
     [self.window makeKeyAndVisible];
     return YES;

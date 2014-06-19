@@ -14,6 +14,9 @@
 #import "JBBarChartFooterView.h"
 #import "JBChartInformationView.h"
 
+// Model
+#import "JBServer.h"
+
 // Numerics
 CGFloat const kJBBarChartViewControllerChartHeight = 250.0f;
 CGFloat const kJBBarChartViewControllerChartPadding = 10.0f;
@@ -22,7 +25,7 @@ CGFloat const kJBBarChartViewControllerChartHeaderPadding = 10.0f;
 CGFloat const kJBBarChartViewControllerChartFooterHeight = 25.0f;
 CGFloat const kJBBarChartViewControllerChartFooterPadding = 5.0f;
 NSUInteger kJBBarChartViewControllerBarPadding = 1;
-NSInteger const kJBBarChartViewControllerNumBars = 12;
+NSInteger const kJBBarChartViewControllerNumBars = 24;
 NSInteger const kJBBarChartViewControllerMaxBarHeight = 10;
 NSInteger const kJBBarChartViewControllerMinBarHeight = 5;
 
@@ -32,9 +35,14 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
 @interface JBBarChartViewController () <JBBarChartViewDelegate, JBBarChartViewDataSource>
 
 @property (nonatomic, strong) JBBarChartView *barChartView;
-@property (nonatomic, strong) JBChartInformationView *informationView;
+@property (nonatomic, strong) JBChartInformationView *pastInformationView;
+@property (nonatomic, strong) JBChartInformationView *currentInformationView;
 @property (nonatomic, strong) NSArray *chartData;
-@property (nonatomic, strong) NSArray *monthlySymbols;
+@property (nonatomic, strong) NSArray *columnSymbols;
+
+//@property (nonatomic) NSInteger currentHourNumber;
+
+@property (nonatomic) NSTimer *refreshTimer;
 
 // Buttons
 - (void)chartToggleButtonPressed:(id)sender;
@@ -85,12 +93,17 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     NSMutableArray *mutableChartData = [NSMutableArray array];
     for (int i=0; i<kJBBarChartViewControllerNumBars; i++)
     {
-        NSInteger delta = (kJBBarChartViewControllerNumBars - abs((kJBBarChartViewControllerNumBars - i) - i)) + 2;
-        [mutableChartData addObject:[NSNumber numberWithFloat:MAX((delta * kJBBarChartViewControllerMinBarHeight), arc4random() % (delta * kJBBarChartViewControllerMaxBarHeight))]];
+        [mutableChartData addObject:@0];
 
     }
     _chartData = [NSArray arrayWithArray:mutableChartData];
-    _monthlySymbols = [[[NSDateFormatter alloc] init] shortMonthSymbols];
+    
+    
+    NSMutableArray *hours = [NSMutableArray new];
+    for ( int i = 0; i < 24; i++ ) {
+        [hours addObject:[NSString stringWithFormat:@"%d Uhr", i]];
+    }
+    _columnSymbols = hours;
 }
 
 #pragma mark - View Lifecycle
@@ -100,7 +113,7 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     [super loadView];
     
     self.view.backgroundColor = kJBColorBarChartControllerBackground;
-    self.navigationItem.rightBarButtonItem = [self chartToggleButtonWithTarget:self action:@selector(chartToggleButtonPressed:)];
+//    self.navigationItem.rightBarButtonItem = [self chartToggleButtonWithTarget:self action:@selector(chartToggleButtonPressed:)];
 
     self.barChartView = [[JBBarChartView alloc] init];
     self.barChartView.frame = CGRectMake(kJBBarChartViewControllerChartPadding, kJBBarChartViewControllerChartPadding, self.view.bounds.size.width - (kJBBarChartViewControllerChartPadding * 2), kJBBarChartViewControllerChartHeight);
@@ -111,36 +124,93 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     self.barChartView.backgroundColor = kJBColorBarChartBackground;
     
     JBChartHeaderView *headerView = [[JBChartHeaderView alloc] initWithFrame:CGRectMake(kJBBarChartViewControllerChartPadding, ceil(self.view.bounds.size.height * 0.5) - ceil(kJBBarChartViewControllerChartHeaderHeight * 0.5), self.view.bounds.size.width - (kJBBarChartViewControllerChartPadding * 2), kJBBarChartViewControllerChartHeaderHeight)];
-    headerView.titleLabel.text = [kJBStringLabelAverageMonthlyTemperature uppercaseString];
-    headerView.subtitleLabel.text = kJBStringLabel2012;
+    headerView.titleLabel.text = @"Your House";
+    headerView.subtitleLabel.text = @"and energy";
     headerView.separatorColor = kJBColorBarChartHeaderSeparatorColor;
     self.barChartView.headerView = headerView;
     
     JBBarChartFooterView *footerView = [[JBBarChartFooterView alloc] initWithFrame:CGRectMake(kJBBarChartViewControllerChartPadding, ceil(self.view.bounds.size.height * 0.5) - ceil(kJBBarChartViewControllerChartFooterHeight * 0.5), self.view.bounds.size.width - (kJBBarChartViewControllerChartPadding * 2), kJBBarChartViewControllerChartFooterHeight)];
     footerView.padding = kJBBarChartViewControllerChartFooterPadding;
-    footerView.leftLabel.text = [[self.monthlySymbols firstObject] uppercaseString];
+    footerView.leftLabel.text = [[self.columnSymbols firstObject] uppercaseString];
     footerView.leftLabel.textColor = [UIColor whiteColor];
-    footerView.rightLabel.text = [[self.monthlySymbols lastObject] uppercaseString];
+    footerView.rightLabel.text = [[self.columnSymbols lastObject] uppercaseString];
     footerView.rightLabel.textColor = [UIColor whiteColor];
     self.barChartView.footerView = footerView;
     
-    self.informationView = [[JBChartInformationView alloc] initWithFrame:CGRectMake(self.view.bounds.origin.x, CGRectGetMaxY(self.barChartView.frame), self.view.bounds.size.width, self.view.bounds.size.height - CGRectGetMaxY(self.barChartView.frame) - CGRectGetMaxY(self.navigationController.navigationBar.frame))];
-    [self.view addSubview:self.informationView];
+    self.pastInformationView = [[JBChartInformationView alloc] initWithFrame:CGRectMake(self.view.bounds.origin.x, CGRectGetMaxY(self.barChartView.frame), self.view.bounds.size.width, self.view.bounds.size.height - CGRectGetMaxY(self.barChartView.frame) - CGRectGetMaxY(self.navigationController.navigationBar.frame))];
+    [self.view addSubview:self.pastInformationView];
+    
+    self.currentInformationView = [[JBChartInformationView alloc] initWithFrame:CGRectMake(self.view.bounds.origin.x, CGRectGetMaxY(self.barChartView.frame), self.view.bounds.size.width, self.view.bounds.size.height - CGRectGetMaxY(self.barChartView.frame) - CGRectGetMaxY(self.navigationController.navigationBar.frame))];
+    [self.view addSubview:self.currentInformationView];
+
 
     [self.view addSubview:self.barChartView];
     [self.barChartView reloadData];
+    
+    
+    // timer
+    self.refreshTimer = [NSTimer scheduledTimerWithTimeInterval:15 target:self selector:@selector(refreshTimerFired:) userInfo:nil repeats:YES];
+}
+
+- (void)dealloc
+{
+    [self.refreshTimer invalidate];
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
     [self.barChartView setState:JBChartViewStateExpanded];
+    
+    [self.currentInformationView setHidden:NO animated:YES];
+    [self.currentInformationView setTitleText:@"Aktuelle Nutzung"];
+    [self.currentInformationView setValueText:@"18" unitText:@"kWh"];
+    
+    [self.pastInformationView setHidden:YES animated:YES];
+    
+    [self refreshServerData];
 }
+
+- (void)refreshTimerFired:(id)sender
+{
+    [self refreshServerData];
+}
+
+- (void)refreshServerData
+{
+    [[JBServer sharedServer] getHistoryWithCompletion:^(id responseObject, NSError *error) {
+        if ( error ) {
+            // todo
+        } else {
+            [self updateDisplayFromNewData];
+        }
+    }];
+    
+}
+
+- (void)updateDisplayFromNewData
+{
+    self.chartData = [[JBServer sharedServer] history];
+    [self.chartView reloadData];
+    
+    NSInteger current = [JBServer sharedServer].current;
+    
+    [self.currentInformationView setValueText:[NSString stringWithFormat:@"%d", current] unitText:@"Watt"];
+    
+    JBChartHeaderView *v = self.barChartView.headerView;
+    v.titleLabel.text = [JBServer sharedServer].chartTitle;
+    v.subtitleLabel.text = [JBServer sharedServer].chartSubtitle;
+
+}
+
 
 #pragma mark - JBBarChartViewDelegate
 
 - (CGFloat)barChartView:(JBBarChartView *)barChartView heightForBarViewAtAtIndex:(NSUInteger)index
 {
+    if ( index >= self.chartData.count ) {
+        return 0;
+    }
     return [[self.chartData objectAtIndex:index] floatValue];
 }
 
@@ -168,17 +238,23 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
 
 - (void)barChartView:(JBBarChartView *)barChartView didSelectBarAtIndex:(NSUInteger)index touchPoint:(CGPoint)touchPoint
 {
+    NSLog(@"Didselect %d", index);
     NSNumber *valueNumber = [self.chartData objectAtIndex:index];
-    [self.informationView setValueText:[NSString stringWithFormat:kJBStringLabelDegreesFahrenheit, [valueNumber intValue], kJBStringLabelDegreeSymbol] unitText:nil];
-    [self.informationView setTitleText:kJBStringLabelWorldwideAverage];
-    [self.informationView setHidden:NO animated:YES];
+    [self.pastInformationView setValueText:[NSString stringWithFormat:@"%@", valueNumber] unitText:@"kWh"];
+    [self.pastInformationView setTitleText:[self.columnSymbols objectAtIndex:index]];
+    [self.pastInformationView setHidden:NO animated:YES];
     [self setTooltipVisible:YES animated:YES atTouchPoint:touchPoint];
-    [self.tooltipView setText:[[self.monthlySymbols objectAtIndex:index] uppercaseString]];
+    [self.tooltipView setText:[self.columnSymbols objectAtIndex:index]];
+    
+    [self.currentInformationView setHidden:YES animated:YES];
 }
 
 - (void)didUnselectBarChartView:(JBBarChartView *)barChartView
 {
-    [self.informationView setHidden:YES animated:YES];
+    
+    [self.currentInformationView setHidden:NO animated:YES];
+    
+    [self.pastInformationView setHidden:YES animated:YES];
     [self setTooltipVisible:NO animated:YES];
 }
 
@@ -186,14 +262,14 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
 
 - (void)chartToggleButtonPressed:(id)sender
 {
-    UIView *buttonImageView = [self.navigationItem.rightBarButtonItem valueForKey:kJBBarChartViewControllerNavButtonViewKey];
-    buttonImageView.userInteractionEnabled = NO;
+//    UIView *buttonImageView = [self.navigationItem.rightBarButtonItem valueForKey:kJBBarChartViewControllerNavButtonViewKey];
+//    buttonImageView.userInteractionEnabled = NO;
     
     CGAffineTransform transform = self.barChartView.state == JBChartViewStateExpanded ? CGAffineTransformMakeRotation(M_PI) : CGAffineTransformMakeRotation(0);
-    buttonImageView.transform = transform;
+//    buttonImageView.transform = transform;
     
     [self.barChartView setState:self.barChartView.state == JBChartViewStateExpanded ? JBChartViewStateCollapsed : JBChartViewStateExpanded animated:YES callback:^{
-        buttonImageView.userInteractionEnabled = YES;
+//        buttonImageView.userInteractionEnabled = YES;
     }];
 }
 

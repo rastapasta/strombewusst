@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		30F721B819536919002CA965 /* EAServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 30F721B719536919002CA965 /* EAServer.m */; };
+		30F721BB19536955002CA965 /* JBServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 30F721BA19536955002CA965 /* JBServer.m */; };
 		9B0725211829822A0052109B /* JBChartListViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B0725201829822A0052109B /* JBChartListViewController.m */; };
 		9B2E530518218CF20079B9D2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B2E530418218CF20079B9D2 /* Foundation.framework */; };
 		9B2E530718218CF20079B9D2 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B2E530618218CF20079B9D2 /* CoreGraphics.framework */; };
@@ -42,6 +44,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		30F721B619536919002CA965 /* EAServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EAServer.h; sourceTree = "<group>"; };
+		30F721B719536919002CA965 /* EAServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EAServer.m; sourceTree = "<group>"; };
+		30F721B919536955002CA965 /* JBServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JBServer.h; sourceTree = "<group>"; };
+		30F721BA19536955002CA965 /* JBServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JBServer.m; sourceTree = "<group>"; };
 		9B07251F1829822A0052109B /* JBChartListViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JBChartListViewController.h; sourceTree = "<group>"; };
 		9B0725201829822A0052109B /* JBChartListViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JBChartListViewController.m; sourceTree = "<group>"; };
 		9B2E530118218CF20079B9D2 /* JBChartViewDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JBChartViewDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -148,6 +154,10 @@
 		9B2E530A18218CF20079B9D2 /* JBChartViewDemo */ = {
 			isa = PBXGroup;
 			children = (
+				30F721B919536955002CA965 /* JBServer.h */,
+				30F721BA19536955002CA965 /* JBServer.m */,
+				30F721B619536919002CA965 /* EAServer.h */,
+				30F721B719536919002CA965 /* EAServer.m */,
 				9BE0B0D0182B16DD00232023 /* Constants */,
 				9B2E534018218D560079B9D2 /* Controllers */,
 				9B2E533C18218D310079B9D2 /* Delegate */,
@@ -384,6 +394,8 @@
 			files = (
 				9BE0B0CE182B162E00232023 /* JBBarChartFooterView.m in Sources */,
 				9B6A68D31829AB9F006DB3BF /* JBChartView.m in Sources */,
+				30F721B819536919002CA965 /* EAServer.m in Sources */,
+				30F721BB19536955002CA965 /* JBServer.m in Sources */,
 				9BEBE9D2183167050046E4A8 /* JBChartInformationView.m in Sources */,
 				9B603D3E182C6E79000A76D0 /* JBBaseNavigationController.m in Sources */,
 				9B698F11182D7BCF003C135F /* JBChartTableCell.m in Sources */,
