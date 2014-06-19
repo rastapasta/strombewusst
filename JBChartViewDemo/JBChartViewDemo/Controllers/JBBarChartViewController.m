@@ -142,6 +142,9 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     
     self.currentInformationView = [[JBChartInformationView alloc] initWithFrame:CGRectMake(self.view.bounds.origin.x, CGRectGetMaxY(self.barChartView.frame), self.view.bounds.size.width, self.view.bounds.size.height - CGRectGetMaxY(self.barChartView.frame) - CGRectGetMaxY(self.navigationController.navigationBar.frame))];
     [self.view addSubview:self.currentInformationView];
+    
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(wasTapped:)];
+    [self.currentInformationView addGestureRecognizer:tap];
 
 
     [self.view addSubview:self.barChartView];
@@ -172,6 +175,11 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
 }
 
 - (void)refreshTimerFired:(id)sender
+{
+    [self refreshServerData];
+}
+
+- (void)wasTapped:(id)sender
 {
     [self refreshServerData];
 }
