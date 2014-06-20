@@ -1,4 +1,4 @@
 strombewusst
 ============
 
-Arduino / Other related Source Code of the StromBewusstSein project
+Arduino / iPhone / Server related Source Code of the StromBewusstSein project
