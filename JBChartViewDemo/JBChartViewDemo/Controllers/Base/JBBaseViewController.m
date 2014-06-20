@@ -40,6 +40,7 @@
 
 - (UIBarButtonItem *)chartToggleButtonWithTarget:(id)target action:(SEL)action
 {
+    
     UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:kJBImageIconArrow] style:UIBarButtonItemStylePlain target:target action:action];
     return button;
 }

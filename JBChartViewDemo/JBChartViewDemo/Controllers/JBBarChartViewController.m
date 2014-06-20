@@ -127,8 +127,8 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     self.barChartView.backgroundColor = kJBColorBarChartBackground;
     
     JBChartHeaderView *headerView = [[JBChartHeaderView alloc] initWithFrame:CGRectMake(kJBBarChartViewControllerChartPadding, ceil(self.view.bounds.size.height * 0.5) - ceil(kJBBarChartViewControllerChartHeaderHeight * 0.5), self.view.bounds.size.width - (kJBBarChartViewControllerChartPadding * 2), kJBBarChartViewControllerChartHeaderHeight)];
-    headerView.titleLabel.text = @"Your House";
-    headerView.subtitleLabel.text = @"and energy";
+//    headerView.titleLabel.text = @"Your House";
+//    headerView.subtitleLabel.text = @"and energy";
     headerView.separatorColor = kJBColorBarChartHeaderSeparatorColor;
     self.barChartView.headerView = headerView;
     
@@ -170,7 +170,7 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     
     [self.currentInformationView setHidden:NO animated:YES];
     [self.currentInformationView setTitleText:@"Aktuelle Nutzung"];
-    [self.currentInformationView setValueText:@"18" unitText:@"kWh"];
+//    [self.currentInformationView setValueText:@"18" unitText:@"kWh"];
     
     [self.pastInformationView setHidden:YES animated:YES];
     
