@@ -17,6 +17,9 @@
 // Model
 #import "JBServer.h"
 
+// Modal Controller
+#import "JBModalSettingsViewController.h"
+
 // Numerics
 CGFloat const kJBBarChartViewControllerChartHeight = 250.0f;
 CGFloat const kJBBarChartViewControllerChartPadding = 10.0f;
@@ -45,7 +48,7 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
 @property (nonatomic) NSTimer *refreshTimer;
 
 // Buttons
-- (void)chartToggleButtonPressed:(id)sender;
+- (void)rightBarButtonPressed:(id)sender;
 
 // Data
 - (void)initFakeData;
@@ -113,7 +116,7 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     [super loadView];
     
     self.view.backgroundColor = kJBColorBarChartControllerBackground;
-//    self.navigationItem.rightBarButtonItem = [self chartToggleButtonWithTarget:self action:@selector(chartToggleButtonPressed:)];
+    self.navigationItem.rightBarButtonItem = [self chartToggleButtonWithTarget:self action:@selector(rightBarButtonPressed:)];
 
     self.barChartView = [[JBBarChartView alloc] init];
     self.barChartView.frame = CGRectMake(kJBBarChartViewControllerChartPadding, kJBBarChartViewControllerChartPadding, self.view.bounds.size.width - (kJBBarChartViewControllerChartPadding * 2), kJBBarChartViewControllerChartHeight);
@@ -268,16 +271,21 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
 
 #pragma mark - Buttons
 
-- (void)chartToggleButtonPressed:(id)sender
+- (void)rightBarButtonPressed:(id)sender
 {
-//    UIView *buttonImageView = [self.navigationItem.rightBarButtonItem valueForKey:kJBBarChartViewControllerNavButtonViewKey];
-//    buttonImageView.userInteractionEnabled = NO;
+    UIView *buttonImageView = [self.navigationItem.rightBarButtonItem valueForKey:kJBBarChartViewControllerNavButtonViewKey];
+    buttonImageView.userInteractionEnabled = NO;
     
     CGAffineTransform transform = self.barChartView.state == JBChartViewStateExpanded ? CGAffineTransformMakeRotation(M_PI) : CGAffineTransformMakeRotation(0);
-//    buttonImageView.transform = transform;
+    buttonImageView.transform = transform;
     
     [self.barChartView setState:self.barChartView.state == JBChartViewStateExpanded ? JBChartViewStateCollapsed : JBChartViewStateExpanded animated:YES callback:^{
-//        buttonImageView.userInteractionEnabled = YES;
+        buttonImageView.userInteractionEnabled = YES;
+    }];
+    
+    JBModalSettingsViewController *modalController = [[JBModalSettingsViewController alloc] initWithNibName:nil bundle:nil];
+    [self presentViewController:modalController animated:YES completion:^{
+        
     }];
 }
 
