@@ -12,7 +12,17 @@
 
 - (void)getHistoryWithCompletion:(JBServerCompletionBlock) completion
 {
-    [self sendAction:@"data" method:@"GET" parameters:@{} completion:^(NSDictionary *responseObject, NSError *error) {
+    NSString *device = [[NSUserDefaults standardUserDefaults] stringForKey:@"jb-device"];
+    if ( !device ) {
+        NSLog(@"Phone does not have device set in NSUserDefaults");
+        if ( completion ) {
+            completion([NSError errorWithDomain:@"jb-error" code:420 userInfo:nil], nil);
+        }
+        return;
+    }
+    
+    
+    [self sendAction:@"data" method:@"GET" parameters:@{@"device":device} completion:^(NSDictionary *responseObject, NSError *error) {
         
         if ( responseObject && !error ) {
                         

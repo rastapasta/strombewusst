@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		305CFB3019545E1A00423E68 /* JBModalSettingsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 305CFB2E19545E1A00423E68 /* JBModalSettingsViewController.m */; };
+		305CFB3119545E1A00423E68 /* JBModalSettingsViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 305CFB2F19545E1A00423E68 /* JBModalSettingsViewController.xib */; };
 		30F721B819536919002CA965 /* EAServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 30F721B719536919002CA965 /* EAServer.m */; };
 		30F721BB19536955002CA965 /* JBServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 30F721BA19536955002CA965 /* JBServer.m */; };
 		9B0725211829822A0052109B /* JBChartListViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9B0725201829822A0052109B /* JBChartListViewController.m */; };
@@ -44,6 +46,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		305CFB2D19545E1A00423E68 /* JBModalSettingsViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JBModalSettingsViewController.h; sourceTree = "<group>"; };
+		305CFB2E19545E1A00423E68 /* JBModalSettingsViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JBModalSettingsViewController.m; sourceTree = "<group>"; };
+		305CFB2F19545E1A00423E68 /* JBModalSettingsViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = JBModalSettingsViewController.xib; sourceTree = "<group>"; };
 		30F721B619536919002CA965 /* EAServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EAServer.h; sourceTree = "<group>"; };
 		30F721B719536919002CA965 /* EAServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EAServer.m; sourceTree = "<group>"; };
 		30F721B919536955002CA965 /* JBServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JBServer.h; sourceTree = "<group>"; };
@@ -199,6 +204,9 @@
 				9B0725201829822A0052109B /* JBChartListViewController.m */,
 				9B6A68DF1829BED5006DB3BF /* JBLineChartViewController.h */,
 				9B6A68E01829BED5006DB3BF /* JBLineChartViewController.m */,
+				305CFB2D19545E1A00423E68 /* JBModalSettingsViewController.h */,
+				305CFB2E19545E1A00423E68 /* JBModalSettingsViewController.m */,
+				305CFB2F19545E1A00423E68 /* JBModalSettingsViewController.xib */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -376,6 +384,7 @@
 				9B698F09182D720E003C135F /* icon-arrow.png in Resources */,
 				9B698F16182D7DAE003C135F /* icon-bar-chart.png in Resources */,
 				9B698F18182D7DAE003C135F /* icon-line-chart.png in Resources */,
+				305CFB3119545E1A00423E68 /* JBModalSettingsViewController.xib in Resources */,
 				9B2E530F18218CF20079B9D2 /* InfoPlist.strings in Resources */,
 				9B698F17182D7DAE003C135F /* icon-bar-chart@2x.png in Resources */,
 				9B603D47182C7002000A76D0 /* icon-jawbone-logo.png in Resources */,
@@ -395,6 +404,7 @@
 				9BE0B0CE182B162E00232023 /* JBBarChartFooterView.m in Sources */,
 				9B6A68D31829AB9F006DB3BF /* JBChartView.m in Sources */,
 				30F721B819536919002CA965 /* EAServer.m in Sources */,
+				305CFB3019545E1A00423E68 /* JBModalSettingsViewController.m in Sources */,
 				30F721BB19536955002CA965 /* JBServer.m in Sources */,
 				9BEBE9D2183167050046E4A8 /* JBChartInformationView.m in Sources */,
 				9B603D3E182C6E79000A76D0 /* JBBaseNavigationController.m in Sources */,

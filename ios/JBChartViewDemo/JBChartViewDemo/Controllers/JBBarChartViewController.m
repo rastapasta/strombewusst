@@ -17,6 +17,9 @@
 // Model
 #import "JBServer.h"
 
+// Modal Controller
+#import "JBModalSettingsViewController.h"
+
 // Numerics
 CGFloat const kJBBarChartViewControllerChartHeight = 250.0f;
 CGFloat const kJBBarChartViewControllerChartPadding = 10.0f;
@@ -45,7 +48,7 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
 @property (nonatomic) NSTimer *refreshTimer;
 
 // Buttons
-- (void)chartToggleButtonPressed:(id)sender;
+- (void)rightBarButtonPressed:(id)sender;
 
 // Data
 - (void)initFakeData;
@@ -113,7 +116,7 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     [super loadView];
     
     self.view.backgroundColor = kJBColorBarChartControllerBackground;
-//    self.navigationItem.rightBarButtonItem = [self chartToggleButtonWithTarget:self action:@selector(chartToggleButtonPressed:)];
+    self.navigationItem.rightBarButtonItem = [self chartToggleButtonWithTarget:self action:@selector(rightBarButtonPressed:)];
 
     self.barChartView = [[JBBarChartView alloc] init];
     self.barChartView.frame = CGRectMake(kJBBarChartViewControllerChartPadding, kJBBarChartViewControllerChartPadding, self.view.bounds.size.width - (kJBBarChartViewControllerChartPadding * 2), kJBBarChartViewControllerChartHeight);
@@ -124,8 +127,8 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     self.barChartView.backgroundColor = kJBColorBarChartBackground;
     
     JBChartHeaderView *headerView = [[JBChartHeaderView alloc] initWithFrame:CGRectMake(kJBBarChartViewControllerChartPadding, ceil(self.view.bounds.size.height * 0.5) - ceil(kJBBarChartViewControllerChartHeaderHeight * 0.5), self.view.bounds.size.width - (kJBBarChartViewControllerChartPadding * 2), kJBBarChartViewControllerChartHeaderHeight)];
-    headerView.titleLabel.text = @"Your House";
-    headerView.subtitleLabel.text = @"and energy";
+//    headerView.titleLabel.text = @"Your House";
+//    headerView.subtitleLabel.text = @"and energy";
     headerView.separatorColor = kJBColorBarChartHeaderSeparatorColor;
     self.barChartView.headerView = headerView;
     
@@ -142,6 +145,9 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     
     self.currentInformationView = [[JBChartInformationView alloc] initWithFrame:CGRectMake(self.view.bounds.origin.x, CGRectGetMaxY(self.barChartView.frame), self.view.bounds.size.width, self.view.bounds.size.height - CGRectGetMaxY(self.barChartView.frame) - CGRectGetMaxY(self.navigationController.navigationBar.frame))];
     [self.view addSubview:self.currentInformationView];
+    
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(wasTapped:)];
+    [self.currentInformationView addGestureRecognizer:tap];
 
 
     [self.view addSubview:self.barChartView];
@@ -164,14 +170,23 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     
     [self.currentInformationView setHidden:NO animated:YES];
     [self.currentInformationView setTitleText:@"Aktuelle Nutzung"];
-    [self.currentInformationView setValueText:@"18" unitText:@"kWh"];
+//    [self.currentInformationView setValueText:@"18" unitText:@"kWh"];
     
     [self.pastInformationView setHidden:YES animated:YES];
     
     [self refreshServerData];
+    
+    if ( ! [[NSUserDefaults standardUserDefaults] objectForKey:@"jb-device"] ) {
+        [self showModalSettings];
+    }
 }
 
 - (void)refreshTimerFired:(id)sender
+{
+    [self refreshServerData];
+}
+
+- (void)wasTapped:(id)sender
 {
     [self refreshServerData];
 }
@@ -260,17 +275,29 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
 
 #pragma mark - Buttons
 
-- (void)chartToggleButtonPressed:(id)sender
+- (void)rightBarButtonPressed:(id)sender
 {
-//    UIView *buttonImageView = [self.navigationItem.rightBarButtonItem valueForKey:kJBBarChartViewControllerNavButtonViewKey];
-//    buttonImageView.userInteractionEnabled = NO;
+    UIView *buttonImageView = [self.navigationItem.rightBarButtonItem valueForKey:kJBBarChartViewControllerNavButtonViewKey];
+    buttonImageView.userInteractionEnabled = NO;
     
     CGAffineTransform transform = self.barChartView.state == JBChartViewStateExpanded ? CGAffineTransformMakeRotation(M_PI) : CGAffineTransformMakeRotation(0);
-//    buttonImageView.transform = transform;
+    buttonImageView.transform = transform;
     
     [self.barChartView setState:self.barChartView.state == JBChartViewStateExpanded ? JBChartViewStateCollapsed : JBChartViewStateExpanded animated:YES callback:^{
-//        buttonImageView.userInteractionEnabled = YES;
+        buttonImageView.userInteractionEnabled = YES;
     }];
+    
+    [self showModalSettings];
+    
+}
+
+- (void)showModalSettings
+{
+    JBModalSettingsViewController *modalController = [[JBModalSettingsViewController alloc] initWithNibName:nil bundle:nil];
+    [self presentViewController:modalController animated:YES completion:^{
+        
+    }];
+
 }
 
 #pragma mark - Overrides

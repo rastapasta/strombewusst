@@ -5,7 +5,7 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
-	<string>3729ABD7-8E4D-4C60-9EFC-472CD468A8DB</string>
+	<string>C3CB2924-B61C-493D-9C20-D6BF87448A7C</string>
 	<key>IDESourceControlProjectName</key>
 	<string>JBChartViewDemo</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
@@ -14,11 +14,11 @@
 		<string>https://github.com/objectiveSee/JBChartView.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>JBChartViewDemo/JBChartViewDemo.xcodeproj/project.xcworkspace</string>
+	<string>ios2/JBChartViewDemo/JBChartViewDemo.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>2F34C32C-D704-48C7-B7D3-727BF4C2CB21</key>
-		<string>../../..</string>
+		<string>../../../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/objectiveSee/JBChartView.git</string>
