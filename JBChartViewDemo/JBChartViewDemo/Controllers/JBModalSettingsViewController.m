@@ -51,7 +51,12 @@
 
 - (IBAction)saveButtonPressed:(UIButton *)sender {
     
+    
     NSString *newID = [self.textfield text];
+    
+    if ( newID.length < 1 ) {
+        return;
+    }
     NSLog(@"Saving %@", newID);
     
     [[NSUserDefaults standardUserDefaults] setObject:newID forKey:@"jb-device"];
@@ -63,6 +68,12 @@
 }
 
 - (IBAction)dismissButtonPressed:(UIButton *)sender {
+    
+    NSString *device = [[NSUserDefaults standardUserDefaults] stringForKey:@"jb-device"];
+    if ( !device ) {
+        return;
+    }
+    
     [self.presentingViewController dismissViewControllerAnimated:YES completion:^{
         
     }];

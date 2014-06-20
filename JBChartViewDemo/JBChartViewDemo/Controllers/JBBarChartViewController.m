@@ -175,6 +175,10 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
     [self.pastInformationView setHidden:YES animated:YES];
     
     [self refreshServerData];
+    
+    if ( ! [[NSUserDefaults standardUserDefaults] objectForKey:@"jb-device"] ) {
+        [self showModalSettings];
+    }
 }
 
 - (void)refreshTimerFired:(id)sender
@@ -283,10 +287,17 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
         buttonImageView.userInteractionEnabled = YES;
     }];
     
+    [self showModalSettings];
+    
+}
+
+- (void)showModalSettings
+{
     JBModalSettingsViewController *modalController = [[JBModalSettingsViewController alloc] initWithNibName:nil bundle:nil];
     [self presentViewController:modalController animated:YES completion:^{
         
     }];
+
 }
 
 #pragma mark - Overrides
