@@ -1,3 +1,9 @@
+/server/node_modules/
+/server/db/
+
+
+## FROM DANNY (XCode stuff)
+
 # OS X
 .DS_Store
 
