@@ -16,8 +16,8 @@
 
 static const NSInteger EAServerPortUndefined = -1;
 NSString * const EAServerProtocol = @"http://";
-NSString * const EAServerAddress = @"se.esse.es";
-NSInteger const EAServerPort = 8000;
+NSString * const EAServerAddress = @"localhost";
+NSInteger const EAServerPort = 3000;
 
 // Allows us to add an artificial minimum delay to network requests. Useful for debugging in local enviroment and testing UI.
 #ifdef DEBUG

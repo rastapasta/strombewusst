@@ -255,7 +255,7 @@ NSString * const kJBBarChartViewControllerNavButtonViewKey = @"view";
 {
     NSLog(@"Didselect %d", index);
     NSNumber *valueNumber = [self.chartData objectAtIndex:index];
-    [self.pastInformationView setValueText:[NSString stringWithFormat:@"%@", valueNumber] unitText:@"kWh"];
+    [self.pastInformationView setValueText:[NSString stringWithFormat:@"%@", valueNumber] unitText:@"Wh"];
     [self.pastInformationView setTitleText:[self.columnSymbols objectAtIndex:index]];
     [self.pastInformationView setHidden:NO animated:YES];
     [self setTooltipVisible:YES animated:YES atTouchPoint:touchPoint];

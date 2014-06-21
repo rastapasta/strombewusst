@@ -82,6 +82,8 @@ static UIColor *kJBChartInformationViewShadowColor = nil;
         [self addSubview:_separatorView];
 
         _valueView = [[JBChartValueView alloc] initWithFrame:[self valueViewRect]];
+        _valueView.valueLabel.adjustsFontSizeToFitWidth = YES;
+        _valueView.valueLabel.minimumScaleFactor = .1;
         [self addSubview:_valueView];
         
         [self setHidden:YES animated:NO];

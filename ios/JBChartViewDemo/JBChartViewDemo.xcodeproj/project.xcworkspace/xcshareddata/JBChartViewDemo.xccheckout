@@ -5,36 +5,36 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
-	<string>C3CB2924-B61C-493D-9C20-D6BF87448A7C</string>
+	<string>D89EB9A4-66CB-4D5A-AD0D-B28357A71D59</string>
 	<key>IDESourceControlProjectName</key>
 	<string>JBChartViewDemo</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
-		<key>2F34C32C-D704-48C7-B7D3-727BF4C2CB21</key>
-		<string>https://github.com/objectiveSee/JBChartView.git</string>
+		<key>928C2718-CA2C-4CD0-89B3-5AD657E46449</key>
+		<string>https://github.com/rastapasta/strombewusst.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>ios2/JBChartViewDemo/JBChartViewDemo.xcodeproj/project.xcworkspace</string>
+	<string>ios/JBChartViewDemo/JBChartViewDemo.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
-		<key>2F34C32C-D704-48C7-B7D3-727BF4C2CB21</key>
+		<key>928C2718-CA2C-4CD0-89B3-5AD657E46449</key>
 		<string>../../../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
-	<string>https://github.com/objectiveSee/JBChartView.git</string>
+	<string>https://github.com/rastapasta/strombewusst.git</string>
 	<key>IDESourceControlProjectVersion</key>
 	<integer>110</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
-	<string>2F34C32C-D704-48C7-B7D3-727BF4C2CB21</string>
+	<string>928C2718-CA2C-4CD0-89B3-5AD657E46449</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>2F34C32C-D704-48C7-B7D3-727BF4C2CB21</string>
+			<string>928C2718-CA2C-4CD0-89B3-5AD657E46449</string>
 			<key>IDESourceControlWCCName</key>
-			<string>JBChartView</string>
+			<string>strombewusst</string>
 		</dict>
 	</array>
 </dict>
