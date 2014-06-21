@@ -7,43 +7,51 @@ SERVER_PORT = 8888
 #***
 
 db = require("mongojs").connect "strombewusst", ["meters", "signals"]
+
 dgram = require "dgram"
 server = dgram.createSocket "udp4"
-
-findByKey = (key) ->
-  db.meters.find key: key  
-
-server.on "message", (msg, rinfo) ->
-  # Decode message -> 6byte API key - 1byte framesize - 1byte impulses
-  data = new String msg
-  
-  if data.length != 8
-    console.log "[data] invalid data received from #{rinfo.address}: #{data}"
-    return
-
-  key = ''
-  for i in [0..5]
-    key += data.charCodeAt(i).toString 16
-
-  timeframe = data.charCodeAt 6
-  impulses = data.charCodeAt 7
-
-  console.log "[data] #{rinfo.address}: #{key} -> #{impulses} impulses in #{timeframe} seconds"
-  meter = db.meters.findOne key: key, (err, meter) ->
-    unless meter
-      console.log "[data] couldn't find corresponding meter"
-    else
-      db.signals.save time: new Date(), meter: meter._id, timeframe: timeframe, impulses: impulses, (err) ->
-        if err
-          console.log "[data] wasn't able to save... #{err}"
-        else
-          console.log "[data] saved!"
 
 server.on "listening", () ->
   address = server.address()
   console.log "*** StromBewusst - UDP Server ***"
   console.log "[server] listening on #{address.address}:#{address.port}"
 
+server.on "message", (buffer, rinfo) ->
+  # Decode message -> 6byte API key - 2byte current load
+
+  if buffer.length != 26
+    console.log "[data] invalid data received from #{rinfo.address}: #{buffer.length} #{buffer}"
+    return
+
+  key = ""
+  for i in [0..22]
+    key += String.fromCharCode(buffer[i]);
+    
+  load = buffer.readUInt8(24)*256+buffer.readUInt8(25)*1
+
+  console.log "[data] #{rinfo.address}: #{key} -> #{load} watts"
+  meter = db.meters.findOne key: key, (err, meter) ->
+    if err
+      console.log "[err] #{err}"
+    unless meter
+      console.log "[data] couldn't find corresponding meter"
+    else
+      db.meters.update meter, $set: {currentWatt: load, updated: new Date}
+      db.signals.save time: new Date(), meter: meter._id, current: load
+
 server.bind SERVER_PORT
 
+http = require "http"
+connect = require "connect"
+connectQuery = require "connect-query"
 
+app = connect()
+  .use(connectQuery())
+  .use (req, res) ->
+    result = {}
+    meter = db.meters.findOne name: req.query.device, (err, meter) ->
+      if meter
+        result = {current: meter.currentWatt}
+    res.end JSON.stringify result
+
+http.createServer(app).listen 3000
