@@ -60,7 +60,7 @@ app = connect()
             price: meter.price
             history: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
-          aggr = db.signals.aggregate {$match: {time: {$gte: new Date(Date.now()-24*60*60*1000)}}},
+          aggr = db.signals.aggregate {$match: {time: {$gte: new Date(Date.now()-48*60*60*1000)}}},
             {$project: {_id: 0, hour: {$hour:'$time'}}},
             {$group: {_id: '$hour', count: {$sum: 1}}},
             {$sort: {_id: 1}}, (err, history) ->
