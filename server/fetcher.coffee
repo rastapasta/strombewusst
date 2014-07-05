@@ -9,7 +9,6 @@ request = require "request"
 csv = require "csv"
 
 class Import
-  days: []
 
 class Import50Hertz extends Import
   url: (day, type, part) ->
@@ -24,29 +23,31 @@ class Import50Hertz extends Import
       else
         "http://ws.50hertz.com/web01/api/PhotovoltaicActual/ListRecords?filterDateTime=#{day}&callback=jQuery"
 
-  fetchPart: (day, type, part) ->
+  fetch: (day, type, part, cb) ->
+    @type = type
+    @day = day
+    @part = part
+
     request @url(day, type, part),
       (error, response, body) =>
-        body = body.replace /^jQuery\(/, ""
-        body = body.replace /\);$/, ""
-        @parse JSON.parse(body)
+        #console.log "resonse: #{body}"
 
-  fetch: (type, day, cb) ->
-    @fetchPart day, "forecast"
-    @fetchPart day, "produced"
+        @parse JSON.parse(body.replace(/^jQuery\(/, "").replace(/\);$/, "")), cb
 
   parse: (data, cb) ->
     i = 0
-
-    for row in data 
+    days = []
+    for row in data
       day = utils.YYYYMMDD new Date row.Date
       time = new Date row.FromTime
 
-      @days[day] = [] unless days[day]
-      @days[day][i++] =
-        time: time
-        estimated: row.Value
+      entry = time: time
+      entry[@part] = row.Value
+
+      days[day] = [] unless days[day]
+      days[day][i++] = entry
+
+    cb days
 
 importer = new Import50Hertz
-importer.fetch "2014-07-01", (days) ->
-  console.log days
+importer.fetch "2014-07-01", "wind", "actual", (days) -> console.log days
