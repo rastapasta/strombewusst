@@ -10,6 +10,39 @@ csv = require "csv"
 
 class Import
 
+
+ImportTennet =
+  fetch: (month, cb) ->
+    request "http://www.tennettso.de/site/Transparenz/veroeffentlichungen/netzkennzahlen/tatsaechliche-und-prognostizierte-windenergieeinspeisung/tatsaechliche-und-prognostizierte-windenergieeinspeisung/monthDataSheetCsv?monat=#{month}",
+      (error, response, body) ->
+        csv.parse body,
+          delimiter: ";",
+          (err, data) ->
+            ImportTennet.parse data, cb
+
+  parse: (data, cb) ->
+    current = today = false
+    day = days = []
+
+    for row in data
+      if row[0].match /^\d{4}-\d{2}-\d{2}$/
+        if current
+          days[utils.YYYYMMDD today] = day
+          day = []
+
+        current = Date.parse row[0]
+        today = new Date current
+
+      if current
+        time = new Date (current + (row[1]-1)*15*60*1000)
+
+        day[row[1]-1] =
+          time: time
+          produced: Number row[2]
+          estimated: Number row[3]
+
+    cb days
+
 class Import50Hertz extends Import
   url: (day, type, part) ->
     if type is "wind"
