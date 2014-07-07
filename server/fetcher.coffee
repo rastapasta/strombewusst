@@ -10,15 +10,17 @@ csv = require "csv"
 
 class Import
 
+class ImportTennet extends Import
+  url: (month) ->
+    "http://www.tennettso.de/site/Transparenz/veroeffentlichungen/netzkennzahlen/tatsaechliche-und-prognostizierte-windenergieeinspeisung/tatsaechliche-und-prognostizierte-windenergieeinspeisung/monthDataSheetCsv?monat=#{month}"
 
-ImportTennet =
   fetch: (month, cb) ->
-    request "http://www.tennettso.de/site/Transparenz/veroeffentlichungen/netzkennzahlen/tatsaechliche-und-prognostizierte-windenergieeinspeisung/tatsaechliche-und-prognostizierte-windenergieeinspeisung/monthDataSheetCsv?monat=#{month}",
-      (error, response, body) ->
+    request @url(month),
+      (error, response, body) =>
         csv.parse body,
           delimiter: ";",
-          (err, data) ->
-            ImportTennet.parse data, cb
+          (err, data) =>
+            @parse data, cb
 
   parse: (data, cb) ->
     current = today = false
@@ -38,8 +40,8 @@ ImportTennet =
 
         day[row[1]-1] =
           time: time
-          produced: Number row[2]
-          estimated: Number row[3]
+          actual: Number row[2]
+          forecast: Number row[3]
 
     cb days
 
@@ -82,5 +84,6 @@ class Import50Hertz extends Import
 
     cb days
 
-importer = new Import50Hertz
-importer.fetch "2014-07-01", "wind", "actual", (days) -> console.log days
+importer = new ImportTennet
+importer.fetch "2014-07", (days) -> console.log days
+#importer.fetch "2014-07-01", "wind", "actual", (days) -> console.log days
