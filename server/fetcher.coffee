@@ -7,15 +7,44 @@
 utils = require "utility"
 request = require "request"
 csv = require "csv"
-
+xml2js = require "xml2js"
 class Import
 
-class ImportTennet extends Import
-  url: (month) ->
-    "http://www.tennettso.de/site/Transparenz/veroeffentlichungen/netzkennzahlen/tatsaechliche-und-prognostizierte-windenergieeinspeisung/tatsaechliche-und-prognostizierte-windenergieeinspeisung/monthDataSheetCsv?monat=#{month}"
+class ImportTransnet extends Import
+  url: (month, type) ->
+    if type is "wind"
+      "http://www.transnetbw.de/en/key-figures/renewable-energies/wind-infeed?app=wind&activeTab=csv&selectMonat=0&view=1&download=true"
+    else
+      "http://www.transnetbw.de/en/key-figures/renewable-energies/photovoltaic?app=solar&activeTab=csv&selectMonat=0&view=1&download=true"
 
-  fetch: (month, cb) ->
-    request @url(month),
+class ImportAmprion extends Import
+  url: (day, type) ->
+    elements = day.split "-"
+    tag = "#{elements[2]}.#{elements[1]}.#{elements[0]}"
+    console.log tag
+    if type is "wind"
+      "http://amprion.de/applications/applicationfiles/winddaten2.php?mode=show&day=#{tag}"
+    else
+      "http://amprion.de/applications/applicationfiles/PV_einspeisung.php?mode=show&day=#{tag}"
+
+  fetch: (day, type, cb) ->
+    request @url(day, type),
+      (error, response, body) =>
+        # Stupid XML malformation on their side
+        body = body.replace /"time="/g, '" time="'
+        parser = new xml2js.Parser()
+        parser.parseString body, (err, result) ->
+          console.dir result.amprion.item
+
+class ImportTennet extends Import
+  url: (month, type) ->
+    if type is "wind"
+      "http://www.tennettso.de/site/Transparenz/veroeffentlichungen/netzkennzahlen/tatsaechliche-und-prognostizierte-windenergieeinspeisung/tatsaechliche-und-prognostizierte-windenergieeinspeisung/monthDataSheetCsv?monat=#{month}"
+    else
+      "http://www.tennettso.de/site/Transparenz/veroeffentlichungen/netzkennzahlen/tatsaechliche-und-prognostizierte-solarenergieeinspeisung_land/monthDataSheetCsv?monat=#{month}"
+
+  fetch: (month, type, cb) ->
+    request @url(month, type),
       (error, response, body) =>
         csv.parse body,
           delimiter: ";",
@@ -65,8 +94,6 @@ class Import50Hertz extends Import
 
     request @url(day, type, part),
       (error, response, body) =>
-        #console.log "resonse: #{body}"
-
         @parse JSON.parse(body.replace(/^jQuery\(/, "").replace(/\);$/, "")), cb
 
   parse: (data, cb) ->
@@ -84,6 +111,8 @@ class Import50Hertz extends Import
 
     cb days
 
+importer = new ImportAmprion
+importer.fetch "2014-07-01", "wind" 
 importer = new ImportTennet
-importer.fetch "2014-07", (days) -> console.log days
+importer.fetch "2014-07", "wind", (days) -> console.log days
 #importer.fetch "2014-07-01", "wind", "actual", (days) -> console.log days
