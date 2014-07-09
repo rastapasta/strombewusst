@@ -8,6 +8,10 @@ utils = require "utility"
 request = require "request"
 csv = require "csv"
 xml2js = require "xml2js"
+fs = require "fs"
+
+offline = true
+
 class Import
 
 class ImportTransnet extends Import
@@ -16,6 +20,29 @@ class ImportTransnet extends Import
       "http://www.transnetbw.de/en/key-figures/renewable-energies/wind-infeed?app=wind&activeTab=csv&selectMonat=0&view=1&download=true"
     else
       "http://www.transnetbw.de/en/key-figures/renewable-energies/photovoltaic?app=solar&activeTab=csv&selectMonat=0&view=1&download=true"
+
+  fetch: (month, type, cb) ->
+    if offline
+      fs.readFile "#{__dirname}/fetched/transnet.#{type}", encoding: "utf8", (err, body) =>
+        @parse body, cb
+    else
+      request @url(month, type),
+        (error, response, body) =>
+          @parse body, cb    
+
+  parse: (data, cb) ->
+    days = []
+    csv.parse data, (err, data) =>
+      data.shift()
+      for row in data
+        time = new Date row[0].split(/\//).reverse().join("-")+" "+row[1]
+        # TODO: weird dd-mm 00:00 issue
+        day = utils.YYYYMMDD time
+
+        days[day] = [] unless days[day] 
+        days[day].push time: time, forecast: Number(row[2]), actual: Number(row[3])
+
+      cb days
 
 class ImportAmprion extends Import
   url: (day, type) ->
@@ -28,13 +55,29 @@ class ImportAmprion extends Import
       "http://amprion.de/applications/applicationfiles/PV_einspeisung.php?mode=show&day=#{tag}"
 
   fetch: (day, type, cb) ->
-    request @url(day, type),
-      (error, response, body) =>
-        # Stupid XML malformation on their side
-        body = body.replace /"time="/g, '" time="'
-        parser = new xml2js.Parser()
-        parser.parseString body, (err, result) ->
-          console.dir result.amprion.item
+    if offline
+      fs.readFile "#{__dirname}/fetched/amprion.#{type}", encoding: "utf8", (err, body) =>
+        @parse body, cb
+    else
+      request @url(day, type),
+        (error, response, body) =>
+          @parse body, cb
+
+  parse: (data, cb) ->
+    # Stupid XML malformation on their side
+    body = data.replace /"time="/g, '" time="'
+
+    parser = new xml2js.Parser()
+    parser.parseString body, (err, result) ->
+      days = []
+      for row in result.amprion.item
+        time = new Date row.$.date.split(/\./).reverse().join("-")+" "+row.$.time.split(" ")[0]
+        day = utils.YYYYMMDD time
+
+        days[day] = [] unless days[day] 
+        days[day].push time: time, forecast: Number(row.$.expost), actual: Number(row.$.exante)
+
+      cb days
 
 class ImportTennet extends Import
   url: (month, type) ->
@@ -97,7 +140,6 @@ class Import50Hertz extends Import
         @parse JSON.parse(body.replace(/^jQuery\(/, "").replace(/\);$/, "")), cb
 
   parse: (data, cb) ->
-    i = 0
     days = []
     for row in data
       day = utils.YYYYMMDD new Date row.Date
@@ -107,12 +149,15 @@ class Import50Hertz extends Import
       entry[@part] = row.Value
 
       days[day] = [] unless days[day]
-      days[day][i++] = entry
+      days[day].push entry
 
     cb days
 
-importer = new ImportAmprion
-importer.fetch "2014-07-01", "wind" 
-importer = new ImportTennet
+importer = new ImportTransnet
 importer.fetch "2014-07", "wind", (days) -> console.log days
+
+#importer = new ImportAmprion
+#importer.fetch "2014-07-01", "wind", (days) -> console.log days
+#importer = new ImportTennet
+#importer.fetch "2014-07", "wind", (days) -> console.log days
 #importer.fetch "2014-07-01", "wind", "actual", (days) -> console.log days
