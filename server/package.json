@@ -1,0 +1,19 @@
+{
+  "name": "strombewusst",
+  "version": "0.0.0",
+  "description": "StromBewusstSein project",
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/rastapasta/strombewusst.git"
+  },
+  "keywords": [
+    "npm"
+  ],
+  "author": "Michael Straßburger <codepoet@cpan.org>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rastapasta/strombewusst/issues"
+  },
+  "homepage": "https://github.com/rastapasta/strombewusst"
+}

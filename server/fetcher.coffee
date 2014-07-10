@@ -35,8 +35,12 @@ class ImportTransnet extends Import
     csv.parse data, (err, data) =>
       data.shift()
       for row in data
-        time = new Date row[0].split(/\//).reverse().join("-")+" "+row[1]
-        # TODO: weird dd-mm 00:00 issue
+        # finxing very weird dd-mm 00:00 issue - transnet supplies the range-end time, with 00:00 pointing to the previous day
+        stamp = Date.parse row[0].split(/\//).reverse().join("-")+" "+row[1]
+        stamp -= 15*60*1000
+        stamp += 24*60*60*1000 if row[1] is "00:00:00"
+        time = new Date stamp
+
         day = utils.YYYYMMDD time
 
         days[day] = [] unless days[day] 
@@ -154,7 +158,7 @@ class Import50Hertz extends Import
     cb days
 
 importer = new ImportTransnet
-importer.fetch "2014-07", "wind", (days) -> console.log days
+importer.fetch "2014-07", "solar", (days) -> console.log days
 
 #importer = new ImportAmprion
 #importer.fetch "2014-07-01", "wind", (days) -> console.log days
